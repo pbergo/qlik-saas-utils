@@ -119,6 +119,74 @@ function Up-Apps {
 }
 
 
+function Up-Files {
+    #Lista os subdiretórios do diretório raiz dos arquivos
+    #Cada subdiretório se torna um Space, shared ou managed, conforme parâmetro
+    $datafiles = gci $dirFiles -Directory
+    #Carrega os arquivos a partir dos subdiretórios
+    foreach ($subDirectory in $datafiles) {
+        #Lista os espaços existentes no servidor
+        $spaces = qlik space filter --names "$subDirectory" | ConvertFrom-Json
+        if (($spaces.name -ne $subDirectory) -and ($Publish -ne "no")) {
+                #Cria os espaços no servidor
+                Write-Log -Message "Creating $($spaceType) Space [$subDirectory]"
+                qlik space create --name "$subDirectory" --description "Space created by upload automated" --type "$spaceType" | Out-Null;
+                if ($?) {
+                    Write-Log -Message "Space [$subDirectory] Created !";
+                } Else {
+                    Write-Log -Severity "Error" -Message "Error create Space [$subDirectory]";
+                }
+        }
+
+        $files = gci $dirApps\$subDirectory\* -File | Where-Object -FilterScript {($_.Length -le $maxFileSize)}
+        foreach ($file in $files) {
+            #Faz o upload para a shared spaces ou para managed spaces
+            $space = qlik space filter --names "$subDirectory" | ConvertFrom-Json
+
+            Write-Log -Message "Uploading [$($file.BaseName)]";
+            $UppedApp = qlik app import -f "$($file)" --fallbackName "$file.Name" | ConvertFrom-Json;
+            if ($?) { 
+                Write-Log -Message "File [$($file.BaseName)] uploaded Id [$($UppedApp.resourceId)]";
+                #Publica as pastas da aplicação
+                if ($Publish -ne "no") {
+                    $sheetsApp = qlik app object ls -a "$($UppedApp.resourceId)" | ConvertFrom-String | where { ($_.P2 -eq 'sheet') -or ($_.P2 -eq 'bookmark')}
+                    foreach ($sheet in $sheetsApp) {
+                        Write-Log -Message "Publishing Sheet id [$($sheet.P1)] from app [$($File.BaseName)]";
+                        qlik app object publish "$($sheet.P1)" -a "$($UppedApp.resourceId)"
+                        if ($?) { 
+                            Write-Log -Message "Object [$($sheet.P1)] type [$($sheet.P2)] published at app Id [$($UppedApp.resourceId)]";
+                        } else { 
+                            Write-Log -Severity "Error" -Message "Error publishing Object [$($sheet.P1)] type [$($sheet.P2)] at app Id [$($UppedApp.resourceId)]";
+                        }
+                    }
+                    if ($space.type -eq "shared") {
+                        #Para Shared Spaces deve-se mover as apps para o espaço shared
+                        Write-Log -Message "Moving [$($file.BaseName)] to Shared Space [$($space.name)] Id [$($space.Id)]";
+                        $PublishedApp = qlik app space update "$($UppedApp.resourceId)" --spaceId "$($space.Id)" | ConvertFrom-Json;
+                        if ($?) { 
+                            Write-Log -Message "App [$($UppedApp.resourceId)] moved at Shared Space Id [$($space.id)]";
+                        } else { 
+                            Write-Log -Severity "Error" -Message "Error moving app [$($UppedApp.resourceId)] to a Shared Space Id [$($space.id)]";
+                        }
+                    } else {
+                        #Para Managed Spaces deve-se publicar as apps
+                        Write-Log -Message "Publishing App [$($file.BaseName)] Id [$($UppedApp.resourceId)] to Managed Space [$($space.name)] Id [$($space.Id)]";
+                        $PublishedApp = qlik app publish create "$($UppedApp.resourceId)" --spaceId "$($space.id)";
+                        if ($?) { 
+                            Write-Log -Message "App [$($UppedApp.resourceId)] published at Managed Space Id [$($space.id)]";
+                        } else { 
+                            Write-Log -Severity "Error" -Message "Error publishing app [$($UppedApp.resourceId)] to a Managed Space Id [$($space.id)]";
+                        }
+                    }
+                }
+            } else {
+                Write-Log -Severity "Error" -Message "Error uploading App [$($file.BaseName)]";
+            }
+        }
+    }
+}
+
+
 Function Up-Extensions {
     ###### Faz upload das Extensões
     #Lista os arquivos do diretório das extensões
@@ -171,6 +239,7 @@ if ($rootPath -notmatch '\\$') { $rootPath += '\' }
 $dirApps   = $rootPath+'Apps'       #Diretório raiz das aplicações
 $dirThemes = $rootPath+'Themes'     #Diretório raiz dos temas
 $dirExts   = $rootPath+'Extensions' #Diretório raiz das extensões
+$dirFiles  = $rootPath+'Files'      #Diretório raiz dos arquivos de dados
 $qlikContext = qlik context get | ConvertFrom-String | where { ($_.P1 -eq 'Name:') }
 If (!(test-path $dirApps) -and !(test-path $dirThemes) -and !(test-path $dirExts)) {
     Write-Log -Severity "Error" -Message "Error You must create at least one subdirectory called Apps, Extensions or Themes, below [$($rootPath)] to upload files...";
