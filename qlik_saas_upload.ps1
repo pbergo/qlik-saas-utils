@@ -24,7 +24,7 @@ function Write-Log {
 function Show-Help {
     $helpMessage = "
     
-qlik_saas_uplaod is a command line that you can upload multiple apps, extensions and themes to a qlik saas tenant with one command line.
+qlik_saas_upload is a command line that you can upload multiple apps, extensions and themes to a qlik saas tenant with one command line.
 
 Instructions:
     The root path must to contain subdirectories named Apps, Extensions and/or Themes to upload files.
