@@ -60,7 +60,7 @@ function DeleteSpaceDataFiles {
             $listfiles = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)",top=100000 | ConvertFrom-Json | Where-Object {$_.name -like $fileNames}
 
             # O comando devolve 100000 registros, então faz a paginação até terminar de apagar os arquivos
-            while ( $($listfiles.Length) -gt 1) {
+            while ( $($listfiles.Length) -ge 1) {
                 foreach ($file in $listfiles) {
                     Write-Log "Deleting file $($file.name)...";
                     if ($confirm -eq 'yes') {
