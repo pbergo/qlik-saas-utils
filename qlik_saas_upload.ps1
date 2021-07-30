@@ -22,6 +22,11 @@ function Write-Log {
     $line | Export-Csv -Path ./qlik_saas_upload.log -Append -NoTypeInformation
 }
 
+function PowerVersion {
+    $version = $PSVersionTable.PSVersion
+    Return ($version.Major -lt 7) 
+}
+
 function Show-Help {
     $helpMessage = "
     
@@ -231,6 +236,19 @@ If (!(test-path $dirApps) -and !(test-path $dirThemes) -and !(test-path $dirExts
     Show-Help
     return
 } 
+if ( PowerVersion ) {
+    $message = "
+    *********************************************************************************************
+
+    Wrong version... This command only works with Powershell >= 7. 
+
+    Please download a newer PowerShell version at https://docs.microsoft.com/pt-br/powershell/
+
+    *********************************************************************************************"
+    Write-Log -Severity 'Error' -Message $message;
+    return
+}
+
 
 Write-Log -Message "#################################################"
 ###### Faz upload das Aplicações, cria e publica os Spaces
