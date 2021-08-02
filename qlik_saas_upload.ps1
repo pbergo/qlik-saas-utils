@@ -1,7 +1,7 @@
 ###### Parametros da aplicação
 Param (
     [Parameter()][alias("path")][string]$rootPath   = './',           #Diretório raiz
-    [Parameter()][alias("size")][int]$maxFileSize   = 500Mb,          #TamMáximo da App --> Parametro importante para diferir do QSB ou QSaaS
+    [Parameter()][alias("size")][int]$maxFileSize   = 1073741824,     #TamMáximo da App 1Gb --> Parametro importante para diferir do QSB ou QSaaS
     [Parameter()][alias("type")][string]$spaceType = 'managed',       #Tipo de space a ser criado
     [Parameter()][alias("upfile")][string]$update = 'no',             #Determina se os arquivos serão atualizados ou substituídos em caso das extensões e themas
     [Parameter()][alias("pub")][string]$Publish   = 'yes'             #Determina se fara a publicação das pastas ou apps
@@ -30,16 +30,48 @@ function PowerVersion {
 function Show-Help {
     $helpMessage = "
     
-qlik_saas_upload is a command line that you can upload multiple apps, extensions and themes to a qlik saas tenant with one command line.
+qlik_saas_upload is a command line to upload multiple files like apps, files, extensions and themes to a qlik saas tenant with one command line.
 
 Instructions:
-    The root path must to contain subdirectories named Apps, Extensions and/or Themes to upload files.
-    Apps has to contains subdirectories with QVF|QVW files to be uploaded. The Apps subdirectories will 
-    be created as spaces at Qlik SaaS and the QVF|QVW files will be published or moved to them, depends 
-    on spaceType parameter.
-    All the apps and theirs sheets will be published by default.
-    Themes and Extensions has to contain ZIP files with the extensions and themes.
-    You need to create and select the Qlik tenant before use this command, using qlik context.
+    The root path must to contain folders named 'Apps', 'Files', 'Extensions' and/or 'Themes' that will be uploaded.
+    Apps has to contains subdirectories with QVF|QVW files to be uploaded. 
+    Files has to contains subdirectories within files that will be uploaded.
+    Notes: 
+        Each subdirectory it is a Space, and the apps or files will be published or moved to them. If the Space not exist, it will be created.
+        Use folder named 'personal' to upload to Personal space.
+
+        If you set the Update parameter to 'yes', the full local name will be compared with SaaS, but it doesn't work very well with Apps, 
+        Extensions and Themes.
+
+        To upload Apps, the API service only support type files Qlik Sense, extension .QVF.
+
+        To upload Files,the API service only support the type files '.qvd, .xlsx, .xls, .xlw, .xlsm, .xml, .csv, .txt, .tab, .qvo, .skv, .log, 
+        .html, .htm, .kml, .fix, .dat, .qvx, .prn, .php, .qvs'. Any other will be ignored.
+    
+        The Space can be 'shared' or 'managed', depends on the spaceType parameter.
+    
+        All the apps and theirs sheets will be published by default. Use the Pub parameter to avoid it.
+        
+        Themes and Extensions has to contain ZIP files with the extensions and themes.
+    
+        You need to create and select the Qlik tenant before use this command, using qlik context.
+
+
+    Following the directory structure do use this command.
+
+    rootPath
+    |
+    +--> Apps
+    |     +--> SpaceX 
+    |          +--> app.qvf (also qvw)
+    +--> Files
+    |     +--> SpaceX
+    |          +--> arq.qvd (also qvx, csv, tab, xls, xlsx, etc. )
+    +--> Extensions
+    |     +--> Extension.zip
+    +--> Themes
+          +--> Theme.zip
+
 
 Usage:
     qlik_saas_upload -path [rootPath], -size [maxFileSize], -type [spaceType], -pub [yes|no]
@@ -74,7 +106,6 @@ function ConvPropert {
     }
 }
 
-## Function in development...
 function Up-Apps {
 
     #Lista os subdiretórios do diretório raiz das aplicações
@@ -85,7 +116,9 @@ function Up-Apps {
         #Lista os espaços existentes no servidor
         $subDirectoryName = $subDirectory.Name
         $spaces = qlik space filter --names "$subDirectoryName" | ConvertFrom-Json
-        if (($spaces.name -ne $subDirectory.Name) -and ($Publish -ne "no")) {
+
+        #Cria o space caso não exista e não for personal
+        if (($spaces.name -ne $subDirectory.Name) -and ($Publish -ne "no") -and ($subDirectory.Name -ne 'Personal')) {
                 #Cria os espaços no servidor
                 Write-Log -Message "Creating $($spaceType) Space [$subDirectoryName]"
                 qlik space create --name "$subDirectoryName" --description "Space created by automated upload script" --type "$spaceType" | Out-Null;
@@ -118,24 +151,28 @@ function Up-Apps {
                             Write-Log -Severity "Error" -Message "Error publishing Object [$($sheet.ID)] type [$($sheet.Type)] at app Id [$($UppedApp.attributes.id)]";
                         }
                     }
-                    if ($space.type -eq "shared") {
-                        #Para Shared Spaces deve-se mover as apps para o espaço shared
-                        Write-Log -Message "Moving [$($file.BaseName)] id [$($UppedApp.attributes.id)] to Shared Space [$($space.name)] Id [$($space.id)]";
-                        $PublishedApp = qlik app space update "$($UppedApp.attributes.id)" --spaceId "$($space.id)" | ConvertFrom-Json;
-                        #Write-Log -Message "$($PublishedApp.attributes)";
-                        if ($?) { 
-                            Write-Log -Message "App [$($UppedApp.attributes.id)] moved at Shared Space Id [$($space.id)]";
-                        } else { 
-                            Write-Log -Severity "Error" -Message "Error moving app [$($UppedApp.attributes.id)] to a Shared Space Id [$($space.id)]";
-                        }
-                    } else {
-                        #Para Managed Spaces deve-se publicar as apps
-                        Write-Log -Message "Publishing App [$($file.BaseName)] Id [$($UppedApp.attributes.id)] to Managed Space [$($space.name)] Id [$($space.id)]";
-                        $PublishedApp = qlik app publish create "$($UppedApp.attributes.id)" --spaceId "$($space.id)";
-                        if ($?) { 
-                            Write-Log -Message "App [$($UppedApp.attributes.id)] published at Managed Space Id [$($space.id)]";
-                        } else { 
-                            Write-Log -Severity "Error" -Message "Error publishing app [$($UppedApp.attributes.id)] to a Managed Space Id [$($space.id)]";
+
+                    #Publica para o space desejado caso não seja Personal
+                    if ($subDirectory.Name -ne 'Personal') {
+                        if ($space.type -eq "shared") {
+                            #Para Shared Spaces deve-se mover as apps para o espaço shared
+                            Write-Log -Message "Moving [$($file.BaseName)] id [$($UppedApp.attributes.id)] to Shared Space [$($space.name)] Id [$($space.id)]";
+                            $PublishedApp = qlik app space update "$($UppedApp.attributes.id)" --spaceId "$($space.id)" | ConvertFrom-Json;
+                            #Write-Log -Message "$($PublishedApp.attributes)";
+                            if ($?) { 
+                                Write-Log -Message "App [$($UppedApp.attributes.id)] moved at Shared Space Id [$($space.id)]";
+                            } else { 
+                                Write-Log -Severity "Error" -Message "Error moving app [$($UppedApp.attributes.id)] to a Shared Space Id [$($space.id)]";
+                            }
+                        } else {
+                            #Para Managed Spaces deve-se publicar as apps
+                            Write-Log -Message "Publishing App [$($file.BaseName)] Id [$($UppedApp.attributes.id)] to Managed Space [$($space.name)] Id [$($space.id)]";
+                            $PublishedApp = qlik app publish create "$($UppedApp.attributes.id)" --spaceId "$($space.id)";
+                            if ($?) { 
+                                Write-Log -Message "App [$($UppedApp.attributes.id)] published at Managed Space Id [$($space.id)]";
+                            } else { 
+                                Write-Log -Severity "Error" -Message "Error publishing app [$($UppedApp.attributes.id)] to a Managed Space Id [$($space.id)]";
+                            }
                         }
                     }
                 }
@@ -145,6 +182,89 @@ function Up-Apps {
         }
     }
 }
+
+
+function Up-Files {
+
+
+    # Define your tenant URL
+    $tenant = Get-Content -Path ~/.qlik/qcs-tenant.txt
+
+    # Define your API key
+    $apikey = Get-Content -Path ~/.qlik/qcs-api_key.txt
+
+    #Lista os subdiretórios do diretório raiz dos arquivos
+    #Cada subdiretório se torna um Space, shared ou managed, conforme parâmetro
+
+    $datafiles = gci $dirFiles -Directory
+    #Carrega os arquivos de dados a partir dos subdiretórios
+
+    foreach ($subDirectory in $datafiles) {
+        #Lista os espaços existentes no servidor
+        $subDirectoryName = $subDirectory.Name
+        $spaces = qlik space filter --names "$subDirectoryName" | ConvertFrom-Json
+
+        #Cria o space caso não exista e não for personal
+        if (($spaces.name -ne $subDirectory.Name) -and ($Publish -ne "no") -and ($subDirectory.Name -ne "Personal")) {
+                #Cria os espaços no servidor
+                Write-Log -Message "Creating $($spaceType) Space [$subDirectoryName]";
+                qlik space create --name "$subDirectoryName" --description "Space created by automated upload script" --type "$spaceType" | Out-Null;
+                if ($?) {
+                    Write-Log -Message "Space [$subDirectoryName] Created !";
+                } Else {
+                    Write-Log -Severity "Error" -Message "Error create Space [$subDirectoryName]";
+                }
+        }
+
+        $localfiles = gci $dirFiles/$subDirectoryName/*.* -File | Where-Object -FilterScript {($_.Length -le $maxFileSize)}
+        foreach ($localfile in $localfiles) {
+
+            $existfile = $false
+            $uploadfile = $true
+
+            #Trata as conexões do espaço personal
+            if ($subDirectoryName -eq 'personal') {
+                $spacename = 'personal'
+                $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?name=$($localfile.BaseName)"
+                $existfile = qlik raw get v1/qix-datafiles --query top=100000 | ConvertFrom-Json | Where-Object {($_.name -like $localfile.Name)}
+            } else {
+                #Faz o upload para a shared spaces ou para managed spaces
+                $space = qlik space filter --names "$subDirectoryName" | ConvertFrom-Json
+                $spacename = $subDirectoryName
+                $dataconnection = qlik raw get v1/data-connections --query space="$($spaces.id)" | ConvertFrom-Json | Where-Object {$_.qName -eq 'DataFiles' }
+                $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?connectionid=$($dataconnection.id)&name=$($localfile.Name)"
+                $existfile = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)",top=100000 | ConvertFrom-Json | Where-Object {($_.name -like $localfile.Name)}
+            }
+
+            #Verifica se o arquivo existe no destino
+            #Se o arquivo existir, checa se é mais novo
+            if ($existfile) {
+                $uploadfile = $false
+                if ($localfile.LasTWriteTime -gt $existfile.modifieddate) {
+                    Write-Log -Message "Deleting older file [$($localfile.Name)] in space [$spaceName] !";
+                    $filedelete = qlik raw delete v1/qix-datafiles/$($existfile[0].id)
+                    if ($?) { 
+                        Write-Log -Message "File [$($localfile.Name)] deleted";
+                        $uploadfile = $true
+                    } else {
+                        Write-Log -Severity "Error" -Message "Error deleting File [$($localfile.Name)]";
+                        $uploadfile = $false
+                    }
+                }
+            }
+            if ($uploadfile) {
+                Write-Log -Message "Uploading new File [$($localfile.Name)] to space [$spaceName] !";
+                $UppedFile = curl -k -s X POST --header "Authorization: Bearer $($apikey)" --header "content-type: multipart/form-data" -F data=@"$($localfile.FullName)"  $urlcmd | ConvertFrom-Json
+                if ($?) { 
+                    Write-Log -Message "File [$($localfile.Name)] uploaded Id [$($UppedFile.id)]";
+                } else {
+                    Write-Log -Severity "Error" -Message "Error uploading File [$($localfile.Name)]";
+                }
+            }
+        }
+    }
+}
+
 
 
 
@@ -213,30 +333,7 @@ Function Up-Themes {
 ###### Código principal
 #Validações iniciais
 #Check if exists context
-$qlikContext = qlik context get 
-if ($qlikContext -eq 'No current context'){
-    Write-Log -Severity 'Error' -Message "Error You must create and select a context to upload files";
-    Show-Help
-    return
-}
-if ($rootPath -notmatch '\/$') { $rootPath += '/' }
-$dirApps   = $rootPath+'Apps'       #Diretório raiz das aplicações
-$dirThemes = $rootPath+'Themes'     #Diretório raiz dos temas
-$dirExts   = $rootPath+'Extensions' #Diretório raiz das extensões
-$dirFiles  = $rootPath+'Files'      #Diretório raiz dos arquivos de dados
-
-# Version <=5
-# $qlikContext = qlik context get | ConvertFrom-String | where { ($_.P1 -eq 'Name:') }
-# $qlikContextName = $qlikContext.P2
-# Version >5
-$qlikContext = qlik context get
-$qlikContextName = $qlikContext[0].replace(' ','').split(':')[1]
-If (!(test-path $dirApps) -and !(test-path $dirThemes) -and !(test-path $dirExts)) {
-    Write-Log -Severity "Error" -Message "Error You must create at least one subdirectory called Apps, Extensions or Themes, below [$($rootPath)] to upload files...";
-    Show-Help
-    return
-} 
-if ( PowerVersion ) {
+if ( (PowerVersion) ) {
     $message = "
     *********************************************************************************************
 
@@ -249,18 +346,44 @@ if ( PowerVersion ) {
     return
 }
 
+$qlikContext = qlik context get 
+if ($qlikContext -eq 'No current context'){
+    Write-Log -Severity 'Error' -Message "Error You must create and select a context to upload files";
+    Show-Help
+    return
+}
+if ($rootPath -notmatch '\/$') { $rootPath += '/' }
+$dirApps   = $rootPath+'Apps'       #Diretório raiz das aplicações
+$dirFiles  = $rootPath+'Files'      #Diretório raiz dos arquivos
+$dirThemes = $rootPath+'Themes'     #Diretório raiz dos temas
+$dirExts   = $rootPath+'Extensions' #Diretório raiz das extensões
+$dirFiles  = $rootPath+'Files'      #Diretório raiz dos arquivos de dados
+If (!(test-path $dirApps) -and !(test-path $dirFiles) -and !(test-path $dirThemes) -and !(test-path $dirExts)) {
+    Write-Log -Severity "Error" -Message "Error You must create at least one subdirectory called Apps, Files, Extensions or Themes, below [$($rootPath)] to upload files...";
+    Show-Help
+    return
+} 
+
+# Version <=5
+# $qlikContext = qlik context get | ConvertFrom-String | where { ($_.P1 -eq 'Name:') }
+# $qlikContextName = $qlikContext.P2
+# Version >5
+$qlikContextName = $qlikContext[0].replace(' ','').split(':')[1]
+
 
 Write-Log -Message "#################################################"
 ###### Faz upload das Aplicações, cria e publica os Spaces
 
 Write-Log -Message "Starting uploading files to context [$($qlikContextName)]"
-If((test-path $dirApps))    { Write-Log -Message "Application (QVF | QVW) directory used is [$($dirApps)]"    } else { Write-Log -Severity 'Warn' -Message "No apps directory found"}
-If((test-path $dirThemes))  { Write-Log -Message "Themes (zip) directory used is [$($dirThemes)]"       } else { Write-Log -Severity 'Warn' -Message "No themes directory found"}
-If((test-path $dirExts))    { Write-Log -Message "Extensions (zip) directory used is [$($dirExts)]"     } else { Write-Log -Severity 'Warn' -Message "No extensions directory found"}
+If((test-path $dirApps))    { Write-Log -Message "Application (QVF | QVW) directory used is [$($dirApps)]"      } else { Write-Log -Severity 'Warn' -Message "No apps directory found"}
+If((test-path $dirFiles))   { Write-Log -Message "Data Files directory used is [$($dirFiles)]"                  } else { Write-Log -Severity 'Warn' -Message "No data files directory found"}
+If((test-path $dirThemes))  { Write-Log -Message "Themes (zip) directory used is [$($dirThemes)]"               } else { Write-Log -Severity 'Warn' -Message "No themes directory found"}
+If((test-path $dirExts))    { Write-Log -Message "Extensions (zip) directory used is [$($dirExts)]"             } else { Write-Log -Severity 'Warn' -Message "No extensions directory found"}
 Write-Log -Message "Publishing parameter used is [$($Publish)]"
 Write-Log -Message "Updating parameter used is [$($update)]"
 
 If((test-path $dirApps)) { Up-Apps }
+If((test-path $dirFiles)) { Up-Files }
 If((test-path $dirThemes)) { Up-Themes }
 If((test-path $dirExts)) { Up-Extensions }
 

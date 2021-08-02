@@ -1,8 +1,8 @@
 ﻿###### Parametros da aplicação
 Param (
-    [Parameter()][alias("users")][string]$userName = 'nonexx',                    #Usuários a serem eliminados
-    [Parameter()][alias("emails")][string]$emailName = 'nonexx',                  #emails dos Usuários a serem eliminados
-    [Parameter()][alias("conf")][string]$confirm    = 'no'                      #Determina se executa ou não o comando
+    [Parameter()][alias("users")][string]$userName = 'none',                      #Usuários a serem eliminados
+    [Parameter()][alias("emails")][string]$emailName = 'none',                   #emails dos Usuários a serem eliminados
+    [Parameter()][alias("conf")][string]$confirm    = 'no'                        #Determina se executa ou não o comando
 )
 
 ###### Funções
@@ -28,12 +28,12 @@ function PowerVersion {
 function Show-Help {
     $helpMessage = "
     
-qlik_saas_delete_users is a command line that you can delete multiple users at any authorized SaaS Tenant of your tenant.
+qlik_saas_delete_users is a command line to delete multiple users of your Qlik SaaS tenant.
 
 Instructions:
-    You need to determine the name or e-mail to delete the users.
+    You need to specify the name or e-mail to delete the users.
 
-    If you set the Confirm parameter to no, nothing will be done, just the users names will be listed. 
+    If you set the Confirm parameter to 'no', nothing will be done, just the users names will be listed. 
 
 Usage:
     qlik_saas_delete_users -userName <userName> [-confirm <yes|no>]
@@ -79,14 +79,6 @@ function DeleteUsers {
 
 ###### Código principal
 #Validações iniciais
-
-#Check if exists context
-$qlikContext = (qlik context get)[0].replace(' ','').split(':')[1]
-if ($qlikContext -eq 'No current context'){
-    Write-Log -Severity 'Error' -Message "Error You must create and select a context to upload files";
-    Show-Help
-    return
-}
 if ( PowerVersion ) {
     $message = "
     *********************************************************************************************
@@ -100,11 +92,23 @@ if ( PowerVersion ) {
     return
 }
 
+#Check if exists context
+$qlikContext = qlik context get
+if ($qlikContext -eq 'No current context'){
+    Write-Log -Severity 'Error' -Message "Error You must create and select a context to upload files";
+    Show-Help
+    return
+}
+$qlikContextName = (qlik context get)[0].replace(' ','').split(':')[1]
 
 Write-Log -Message "#################################################"
 ###### Delete specified users...
 
-Write-Log -Message "Starting deleting users from context [$qlikContext]"
+Write-Log -Message "Starting deleting users from context [$qlikContextName]"
+Write-Log -Message "Users filter used is [$($userName)]"
+Write-Log -Message "Email filter used is [$($userName)]"
+Write-Log -Message "Confirm parameter used is [$($confirm)]"
+
 DeleteUsers
 
 Write-Log -Message "End of deleting users."

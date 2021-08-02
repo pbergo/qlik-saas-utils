@@ -1,7 +1,7 @@
 ﻿###### Parametros da aplicação
 Param (
     [Parameter()][alias("space")][string]$spaceName = 'personal',               #Espaço a ser utilizado.
-    [Parameter()][alias("files")][string]$fileNames = 'none',                    #Arquivos a serem eliminados
+    [Parameter()][alias("files")][string]$fileNames = 'none',                   #Arquivos a serem eliminados
     [Parameter()][alias("date")][string]$dateFiles  = (Get-Date).DateTime,      #Data a ser utilizada
     [Parameter()][alias("conf")][string]$confirm    = 'no'                      #Determina se executa ou não o comando
 )
@@ -24,7 +24,7 @@ function Write-Log {
 function Show-Help {
     $helpMessage = "
     
-qlik_saas_delete is a command line that you can delete multiple data files inside any authorized SaaS Space of your tenant.
+qlik_saas_delete is a command line to delete multiple data files inside any authorized SaaS Space of your tenant.
 
 Instructions:
     The space must contain the name of SaaS Space wich has the files that will be deleted. You can specify
@@ -101,19 +101,6 @@ function DeleteSpaceDataFiles {
 
 ###### Código principal
 #Validações iniciais
-
-#Check if exists context
-$qlikContext = (qlik context get)[0].replace(' ','').split(':')[1]
-if ($qlikContext -eq 'No current context'){
-    Write-Log -Severity 'Error' -Message "Error You must create and select a context to upload files";
-    Show-Help
-    return
-}
-if ($fileNames -eq 'none') {
-    Show-Help
-    return
-}
-
 if ( PowerVersion ) {
     $message = "
     *********************************************************************************************
@@ -127,11 +114,27 @@ if ( PowerVersion ) {
     return
 }
 
+#Check if exists context
+$qlikContext = qlik context get
+if ($qlikContext -eq 'No current context'){
+    Write-Log -Severity 'Error' -Message "Error You must create and select a context to upload files";
+    Show-Help
+    return
+}
+if ($fileNames -eq 'none') {
+    Show-Help
+    return
+}
+$qlikContextName = (qlik context get)[0].replace(' ','').split(':')[1]
 
 Write-Log -Message "#################################################"
 ###### Delete specified files...
 
-Write-Log -Message "Starting deleting files from context [$($qlikContext)]"
+Write-Log -Message "Starting deleting files from context [$($qlikContextName)]"
+Write-Log -Message "Space parameter used is [$($spaceName)]"
+Write-Log -Message "Files filter used is [$($fileNames)]"
+Write-Log -Message "Confirm parameter used is [$($confirm)]"
+
 DeleteSpaceDataFiles
 
 Write-Log -Message "End of deleting files."
