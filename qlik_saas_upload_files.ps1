@@ -1,0 +1,197 @@
+###### Parametros da aplicação
+Param (
+    [Parameter()][alias("space")][string]$spaceName = 'personal',               #Espaço a ser utilizado.
+    [Parameter()][alias("size")][int]$maxFileSize   = 2097152,                  #TamMáximo dos arquivos = 2Gb
+    [Parameter()][alias("files")][string]$fileNames = 'none',                   #Arquivos a serem eliminados
+    [Parameter()][alias("ovw")][string]$overwrite   = 'no'                      #Determina se grava os mais novos ou todos
+)
+
+###### Funções
+function Write-Log {
+    param ( 
+        [Parameter(Mandatory)][string]$Message,
+        [Parameter()][ValidateSet('Info','Warn','Error')][string]$Severity = 'Info'
+    )    
+    $line = [pscustomobject]@{
+        'DateTime' = (Get-Date)
+        'Severity' = $Severity
+        'Message' = $Message        
+    }
+    Write-Host "$($line.DateTime) [$($line.Severity)]: $($line.Message)"
+    $line | Export-Csv -Path ./qlik_saas_upload.log -Append -NoTypeInformation
+}
+
+function PowerVersion {
+    $version = $PSVersionTable.PSVersion
+    Return ($version.Major -lt 7) 
+}
+
+function Show-Help {
+    $helpMessage = "
+    
+qlik_saas_upload_files is a command line to upload files from local folder to specified SaaS space.
+
+Instructions:
+    You need to specify the folder/files Name that contais the files to be uploaded. You can use wildcards like '*' and '?'.
+    The Space Name must contains the name of SaaS Space wich has the files that will be uploaded. 
+    If the space not exists, nothing will be uploaded.
+
+    If you set the Overwrite parameter to 'yes', all files will be uploaded, otherwise only will be uploaded the newer local files.
+
+    The API service will only receive files supported by Qlik SaaS, any other will be disregarded. Today the supported type files are
+    '.qvd, .xlsx, .xls, .xlw, .xlsm, .xml, .csv, .txt, .tab, .qvo, .skv, .log, .html, .htm, .kml, .fix, .dat, .qvx, .prn, .php, .qvs'
+
+Usage:
+    qlik_saas_upload_files -fileNames <fileNames> [-spaceName <spaceName>] [-confirm <yes|no>]
+        fileNames = The file name to be deleted. You can use wildcards like '*' and '?' to filter files. 
+                    This parameter is mandatory.
+        spaceName = The Name of Space wich has the files that will be deleted. Leave it blank to use the 
+                    Personal space.
+                    If there are more than one space with the same name, the first will be used.
+        overwrite = If yes, then SaaS files will be overwrited, even they are newer than local files. 
+                    If no, only the files older than local files will be uploaded. 
+                    Default is no.
+
+    *** CAUTION: Each file is deleted before uploading and there no exists roll-back in SaaS upload files, so proceed with caution. 
+
+    "
+    Write-Output $helpMessage
+    return
+}
+
+function ConvPropert {
+    [regex]$rx="\s{2,}"
+    $properties = $rx.Split($raw[0].trim()) | Convert-StringProperty  
+     for ($i=1;$i -lt $raw.count; $i++) {
+          $splitData = $rx.split($raw[$i].Trim())
+          #create an object for each entry
+          $hash = [ordered]@{}
+          for ($j=0;$j -lt $properties.count;$j++) {
+            $hash.Add($properties[$j],$splitData[$j])
+          } 
+          [pscustomobject]$hash
+    }
+}
+
+
+function Up-Files {
+    # Define your tenant URL
+    $tenant = Get-Content -Path ~/.qlik/qcs-tenant.txt
+
+    # Define your API key
+    $apikey = Get-Content -Path ~/.qlik/qcs-api_key.txt
+
+    #Localiza os espaços existentes no servidor
+    if ($spaceName -eq 'personal') {
+        Write-Log -Message "Using space Personal !";
+        $dataconnection = qlik raw get v1/data-connections | ConvertFrom-Json | Where-Object { ($_.qName -eq 'DataFiles') -and ($_.space -eq $null) }
+    } else {
+        $spaces = qlik space filter --names "$spaceName" | ConvertFrom-Json
+        if ($spaces) {
+            Write-Log -Message "Using space [$spaceName] ID [$($spaces.id)] !";
+            $dataconnection = qlik raw get v1/data-connections --query space="$($spaces.id)" | ConvertFrom-Json | Where-Object {$_.qName -eq 'DataFiles' }
+        } else {
+            Write-Log -Severity "Error" -Message "Error the space [$($spaceName)] doesn't exists !";
+            return
+        }
+
+    }
+
+    #Carrega os arquivos de dados a partir do diretório raiz
+    $localfiles = gci $fileNames -File | Where-Object -FilterScript {($_.Length -le $maxFileSize)}
+    if ($spaceName -eq 'personal') {
+        $saasfiles = qlik raw get v1/qix-datafiles --query top=100000 | ConvertFrom-Json 
+    } else {
+        $saasfiles = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)",top=100000 | ConvertFrom-Json
+    }
+
+    #"| Where-Object -FilterScript {($_.Length -le $maxFileSize)}"
+    foreach ($localfile in $localfiles) {
+
+        $existfile = $false
+        $uploadfile = $true
+
+        #Verifica se o arquivo existe no destino
+        if ($spaceName -eq 'personal') {
+            $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?name=$($localfile.BaseName)"
+            $existfile = $saasfiles | Where-Object {($_.name -like $localfile.Name)}
+        } else {
+            #Faz o upload para a shared spaces ou para managed spaces
+            $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?connectionid=$($dataconnection.id)&name=$($localfile.Name)"
+            $existfile = $saasfiles | Where-Object {($_.name -like $localfile.Name)}
+        }
+
+        #Se o arquivo existir, checa se é mais novo ou o parâmetro overwrited
+        if ($existfile) {
+            $uploadfile = $false
+            if ( ($localfile.LasTWriteTime -gt $existfile.modifieddate) -or ($overwrite -eq 'yes') ) {
+                Write-Log -Message "Deleting SaaS file [$($localfile.Name)] in space [$spaceName] !";
+                $filedelete = qlik raw delete v1/qix-datafiles/$($existfile[0].id)
+                if ($?) { 
+                    Write-Log -Message "File [$($localfile.Name)] deleted";
+                    $uploadfile = $true
+                } else {
+                    Write-Log -Severity "Error" -Message "Error deleting File [$($localfile.Name)]";
+                    $uploadfile = $false
+                }
+            }
+        }
+        if ($uploadfile) {
+            Write-Log -Message "Uploading new File [$($localfile.Name)] to space [$spaceName] !";
+            $UppedFile = curl -k -s X POST --header "Authorization: Bearer $($apikey)" --header "content-type: multipart/form-data" -F data=@"$($localfile.FullName)"  $urlcmd | ConvertFrom-Json
+            if ($?) { 
+                Write-Log -Message "File [$($localfile.Name)] uploaded Id [$($UppedFile.id)]";
+            } else {
+                Write-Log -Severity "Error" -Message "Error uploading File [$($localfile.Name)]";
+            }
+        }
+    }
+}
+
+
+###### Código principal
+#Validações iniciais
+if ( (PowerVersion) ) {
+    $message = "
+    *********************************************************************************************
+
+    Wrong version... This command only works with Powershell >= 7. 
+
+    Please download a newer PowerShell version at https://docs.microsoft.com/pt-br/powershell/
+
+    *********************************************************************************************"
+    Write-Log -Severity 'Error' -Message $message;
+    return
+}
+
+#Check if exists context
+$qlikContext = qlik context get 
+if ($qlikContext -eq 'No current context'){
+    Write-Log -Severity 'Error' -Message "Error You must create and select a context to upload files";
+    Show-Help
+    return
+}
+if ($fileNames -eq 'none') {
+    Show-Help
+    return
+}
+
+# Version <=5
+# $qlikContext = qlik context get | ConvertFrom-String | where { ($_.P1 -eq 'Name:') }
+# $qlikContextName = $qlikContext.P2
+# Version >5
+$qlikContextName = $qlikContext[0].replace(' ','').split(':')[1]
+
+Write-Log -Message "#################################################"
+###### Uploadind specified files...
+
+Write-Log -Message "Starting uploadind files to context [$($qlikContextName)]"
+Write-Log -Message "Space parameter used is [$($spaceName)]"
+Write-Log -Message "Files filter used is [$($fileNames)]"
+Write-Log -Message "Overwrite parameter used is [$($overwrite)]"
+
+Up-Files
+
+Write-Log -Message "End of uploading files."
+Write-Log -Message "#################################################"
+
