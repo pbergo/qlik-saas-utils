@@ -23,9 +23,9 @@ Também possibilita apagar arquivos e usuários existentes no SaaS.
 
 ### Upload
 
-[a relative link](qlik_saas_upload.ps1)
+[qlik_saas_upload.ps1](qlik_saas_upload.ps1)
 
-O script [a relative link](qlik_saas_upload.ps1) faz o upload de vários arquivos localizados em subdiretórios determinados via linha de comando. 
+O script [qlik_saas_upload.ps1](qlik_saas_upload.ps1) faz o upload de vários arquivos localizados em subdiretórios determinados via linha de comando. 
 
 Você pode subir Aplicativos (QVF), Arquivos (QVDs, XLSX, etc.), Extensões e Themas diretamente para o SaaS a partir de diretórios locais. Cada diretório local vira um Space dentro do SaaS e você ainda pode definir se ele será criado como 'Shared' ou 'Managed'. 
 
@@ -51,7 +51,7 @@ Esse programa foi criado para permitir automatizar o processo de carga e geraç�
 
 ## Upload Files
 
-[a relative link](qlik_saas_upload_files.ps1)
+[qlik_saas_upload_files.ps1](qlik_saas_upload_files.ps1)
 
 Esse script foi criado para realizar upload de arquivos diversos direto para o ambiente SaaS.
 
@@ -76,9 +76,9 @@ Sintaxe:
 
 ## Delete Files
 
-[a relative link](qlik_saas_delete_files.ps1)
+[qlik_saas_delete_files.ps1](qlik_saas_delete_files.ps1)
 
-O programa [a relative link](qlik_saas_delete.ps1) apaga vários arquivos localizados em um Space do SaaS via linha de comando.
+O programa [qlik_saas_delete_files.ps1](qlik_saas_delete.ps1) apaga vários arquivos localizados em um Space do SaaS via linha de comando.
 
 Criado para facilitar operar o ambiente SaaS, quando houver uma grande quantidade de arquivos e se tornar difícil a operação de limpeza de forma manual.
 
@@ -100,9 +100,9 @@ Sintaxe:
 
 ## Delete Users
 
-[a relative link](qlik_saas_delete_users.ps1)
+[qlik_saas_delete_users.ps1](qlik_saas_upload.ps1](qlik_saas_delete_users.ps1)
 
-Com o script [a relative link](qlik_saas_delete_users.ps1) é possível apaga vários usuários por linha de comando do ambiente SaaS.
+Com o script [qlik_saas_delete_users.ps1](qlik_saas_delete_users.ps1) é possível apaga vários usuários por linha de comando do ambiente SaaS.
 
 Criado para facilitar operar o ambiente SaaS, quando houver uma grande quantidade de usuários e se tornar difícil a operação de limpeza de forma manual.
 
@@ -214,4 +214,8 @@ Para isso, faça o seguinte:
   - Abra um novo bloco de notas e insira a chave API, aquela mesma informada no Passo 1.
   - Depois clique em Salvar --> Nome do arquivo *~/.qlik/qcs_api-key.txt*
  
+
+Pronto, agora é só usar os comandos !
+
+Boa sorte e se quiser escreva para mim contando como foi, críticas e sugestões são bem vindas !
 
