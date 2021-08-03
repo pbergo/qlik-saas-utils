@@ -1,7 +1,21 @@
+#################################################################################
+#
+# qlik_saas_upload
+#
+# Upload Apps, Files, Extensions and Thems to SaaS
+#
+# (c) Pedro Bergo - pedroabergo@gmail.com - 2021
+#
+# PowerShell 7.1.3
+# qlik-cli 2.3.1
+#
+#################################################################################
+
 ###### Parametros da aplicação
 Param (
     [Parameter()][alias("path")][string]$rootPath   = './',           #Diretório raiz
-    [Parameter()][alias("size")][int]$maxFileSize   = 1073741824,     #TamMáximo da App 1Gb --> Parametro importante para diferir do QSB ou QSaaS
+    [Parameter()][alias("size")][bigint]$maxAppSize   = 1073741824,   #TamMáximo da App 1Gb --> Parametro importante para diferir do QSB ou QSaaS
+    [Parameter()][alias("size")][bigint]$maxFileSize  = 629145600,    #TamMáximo dos arquivos = 600Mb
     [Parameter()][alias("type")][string]$spaceType = 'managed',       #Tipo de space a ser criado
     [Parameter()][alias("upfile")][string]$update = 'no',             #Determina se os arquivos serão atualizados ou substituídos em caso das extensões e themas
     [Parameter()][alias("pub")][string]$Publish   = 'yes'             #Determina se fara a publicação das pastas ou apps
@@ -74,12 +88,12 @@ Instructions:
 
 
 Usage:
-    qlik_saas_upload -path [rootPath], -size [maxFileSize], -type [spaceType], -pub [yes|no]
+    qlik_saas_upload -path [rootPath], -size [maxAppSize], -type [spaceType], -pub [yes|no]
         rootPath = Path wich contains directories Apps, Themes and Extensions wich contains the files to 
                    be upload
                    Any subdirectory inside Apps will be created as a Space at Qlik Context
                    default = './'
-        maxFileSize = Filter Max file size during subdirectories scanning. Default = 500Mb
+        maxAppSize = Filter Max App size during subdirectories scanning. Default = 1Gb
         spaceType = Type of Space created. 'managed' (default) or 'shared'.
                     Only for Qlik SaaS Enterprise, not used to Qlik Business.
         update = yes | no. If 'yes', the objects will be updatades. 
@@ -129,7 +143,7 @@ function Up-Apps {
                 }
         }
 
-        $files = gci $dirApps/$subDirectoryName/*.qv[f-w] -File | Where-Object -FilterScript {($_.Length -le $maxFileSize)}
+        $files = gci $dirApps/$subDirectoryName/*.qv[f-w] -File | Where-Object -FilterScript {($_.Length -le $maxAppSize)}
         foreach ($file in $files) {
             #Faz o upload para a shared spaces ou para managed spaces
             $space = qlik space filter --names "$subDirectoryName" | ConvertFrom-Json
@@ -216,7 +230,7 @@ function Up-Files {
                 }
         }
 
-        $localfiles = gci $dirFiles/$subDirectoryName/*.* -File | Where-Object -FilterScript {($_.Length -le $maxFileSize)}
+        $localfiles = gci $dirFiles/$subDirectoryName/*.* -File
         foreach ($localfile in $localfiles) {
 
             $existfile = $false
@@ -234,6 +248,15 @@ function Up-Files {
                 $dataconnection = qlik raw get v1/data-connections --query space="$($spaces.id)" | ConvertFrom-Json | Where-Object {$_.qName -eq 'DataFiles' }
                 $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?connectionid=$($dataconnection.id)&name=$($localfile.Name)"
                 $existfile = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)",top=100000 | ConvertFrom-Json | Where-Object {($_.name -like $localfile.Name)}
+            }
+
+            # Restinge pelo tamanho do arquivo
+            if ($localfile.Length -gt $maxFileSize) {
+                $localfileMb = [math]::Round(($localfile.Length / 1Mb),2)
+                $MaxFileSizeMb = $maxFileSize / 1Mb
+                Write-Log -Severity "Warn" -Message "The file [$($localfile.Name)] has $($localfileMb)Mb that exceeds API size limit ($($maxFileSizeMb)Mb) !";
+                $existfile = $false
+                $uploadfile = $false
             }
 
             #Verifica se o arquivo existe no destino

@@ -1,7 +1,20 @@
-﻿###### Parametros da aplicação
+﻿#################################################################################
+#
+# qlik_saas_delete_users
+#
+# Delete Users from SaaS
+#
+# (c) Pedro Bergo - pedroabergo@gmail.com - 2021
+#
+# PowerShell 7.1.3
+# qlik-cli 2.3.1
+#
+#################################################################################
+
+###### Parametros da aplicação
 Param (
     [Parameter()][alias("users")][string]$userName = 'none',                      #Usuários a serem eliminados
-    [Parameter()][alias("emails")][string]$emailName = 'none',                   #emails dos Usuários a serem eliminados
+    [Parameter()][alias("emails")][string]$emailName = 'none',                    #emails dos Usuários a serem eliminados
     [Parameter()][alias("conf")][string]$confirm    = 'no'                        #Determina se executa ou não o comando
 )
 

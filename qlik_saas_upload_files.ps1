@@ -1,9 +1,22 @@
+#################################################################################
+#
+# qlik_saas_upload_files
+#
+# Upload Files to SaaS
+#
+# (c) Pedro Bergo - pedroabergo@gmail.com - 2021
+#
+# PowerShell 7.1.3
+# qlik-cli 2.3.1
+#
+#################################################################################
+
 ###### Parametros da aplicação
 Param (
-    [Parameter()][alias("space")][string]$spaceName = 'personal',               #Espaço a ser utilizado.
-    [Parameter()][alias("size")][int]$maxFileSize   = 2097152,                  #TamMáximo dos arquivos = 2Gb
-    [Parameter()][alias("files")][string]$fileNames = 'none',                   #Arquivos a serem eliminados
-    [Parameter()][alias("ovw")][string]$overwrite   = 'no'                      #Determina se grava os mais novos ou todos
+    [Parameter()][alias("space")][string]$spaceName   = 'personal',           #Espaço a ser utilizado.
+    [Parameter()][alias("size")][bigint]$maxFileSize  = 629145600,            #TamMáximo dos arquivos = 600Mb
+    [Parameter()][alias("files")][string]$fileNames   = 'none',               #Arquivos a serem eliminados
+    [Parameter()][alias("ovw")][string]$overwrite     = 'no'                  #Determina se grava os mais novos ou todos
 )
 
 ###### Funções
@@ -18,7 +31,7 @@ function Write-Log {
         'Message' = $Message        
     }
     Write-Host "$($line.DateTime) [$($line.Severity)]: $($line.Message)"
-    $line | Export-Csv -Path ./qlik_saas_upload.log -Append -NoTypeInformation
+    $line | Export-Csv -Path ./qlik_saas_upload_files.log -Append -NoTypeInformation
 }
 
 function PowerVersion {
@@ -98,14 +111,13 @@ function Up-Files {
     }
 
     #Carrega os arquivos de dados a partir do diretório raiz
-    $localfiles = gci $fileNames -File | Where-Object -FilterScript {($_.Length -le $maxFileSize)}
+    $localfiles = gci $($fileNames) -File
     if ($spaceName -eq 'personal') {
         $saasfiles = qlik raw get v1/qix-datafiles --query top=100000 | ConvertFrom-Json 
     } else {
         $saasfiles = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)",top=100000 | ConvertFrom-Json
     }
 
-    #"| Where-Object -FilterScript {($_.Length -le $maxFileSize)}"
     foreach ($localfile in $localfiles) {
 
         $existfile = $false
@@ -120,11 +132,18 @@ function Up-Files {
             $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?connectionid=$($dataconnection.id)&name=$($localfile.Name)"
             $existfile = $saasfiles | Where-Object {($_.name -like $localfile.Name)}
         }
+        if ($localfile.Length -gt $maxFileSize) {
+            $localfileMb = [math]::Round(($localfile.Length / 1Mb),2)
+            $MaxFileSizeMb = $maxFileSize / 1Mb
+            Write-Log -Severity "Warn" -Message "The file [$($localfile.Name)] has $($localfileMb)Mb that exceeds API size limit ($($maxFileSizeMb)Mb) !";
+            $existfile = $false
+            $uploadfile = $false
+        }
 
         #Se o arquivo existir, checa se é mais novo ou o parâmetro overwrited
         if ($existfile) {
             $uploadfile = $false
-            if ( ($localfile.LasTWriteTime -gt $existfile.modifieddate) -or ($overwrite -eq 'yes') ) {
+            if ( ($overwrite -eq 'yes') -or ($localfile.LastWriteTime -gt $existfile.modifieddate) ) {
                 Write-Log -Message "Deleting SaaS file [$($localfile.Name)] in space [$spaceName] !";
                 $filedelete = qlik raw delete v1/qix-datafiles/$($existfile[0].id)
                 if ($?) { 
