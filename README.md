@@ -1,11 +1,10 @@
 README.md
 # Qlik SaaS Utils
-
 Scripts utilitários para operar o SaaS, fazendo upload de apps, arquivos, extensões e temas, arquivos. Também possibilita apagar arquivos e usuários existentes no SaaS.
 
 ## Qlik SaaS Utils
 
-## Table of Contents
+### Table of Contents
 
 -[Upload](#upload)
 
@@ -16,43 +15,40 @@ Scripts utilitários para operar o SaaS, fazendo upload de apps, arquivos, exten
 -[Delete Users](#delete_users)
 
 
-## Upload
+### Upload
 
 qlik_saas_upload.ps1
 
-O programa qlik_saas_upload.ps1 faz o upload de vários arquivos localizados em subdiretórios determinados via linha de comando. 
-- Apps: Esse programa, além de importar os apps, também cria Spaces onde eles serão publicados, publica os aplicativos para esses Spaces. Também publica pastas dos apps carregados de forma automática, evitando o processo manual.
-- Arquivos: Os arquivos existentes nos subiretórios, faz upload diretamente para o SaaS.
-- Extensões: As extensões são importadas para o SaaS.
-- Temas: Temas também são carregados para o SaaS automaticamente.
-
+O script qlik_saas_upload.ps1 faz o upload de vários arquivos localizados em subdiretórios determinados via linha de comando. 
+Você pode subir Aplicativos (QVF), Arquivos (QVDs, XLSX, etc.), Extensões e Themas diretamente para o SaaS a partir de diretórios locais. Cada diretório local vira um Space dentro do SaaS e você ainda pode definir se ele será criado como 'Shared' ou 'Managed'. 
+O script ainda publica as pastas das Apps carregadas, o que ajuda muito na hora de criar ambiente iniciais ou mesmo para atualizar aqueles existentes.
 Esse programa foi criado para permitir automatizar o processo de carga e geração de ambientes do SaaS. 
 
-Usage:
+**Sintaxe:**
+
     qlik_saas_upload -path [rootPath], -size [maxAppSize], -type [spaceType], -pub [yes|no]
-        rootPath = Path wich contains directories Apps, Themes and Extensions wich contains the files to 
-                   be upload
-                   Any subdirectory inside Apps will be created as a Space at Qlik Context
-                   default = './'
-        maxAppSize = Filter Max App size during subdirectories scanning. Default = 1Gb
-        spaceType = Type of Space created. 'managed' (default) or 'shared'.
-                    Only for Qlik SaaS Enterprise, not used to Qlik Business.
-        update = yes | no. If 'yes', the objects will be updatades. 
-                 Apps will be localized by name and updated. 
-                 Extensions will be deleted 
-        Publish = yes | no. if 'no', the space will not be created, the apps uploaded will not be published 
-                  and their sheets also will stay unpublished. 
-
-
+        rootPath   = Path wich contains directories Apps, Themes and Extensions wich
+                     contains the files to be upload. Any subdirectory inside Apps
+                     will be created as a Space at Qlik Context. Default = './'
+        maxAppSize = Filter Max App size during subdirectories scanning. 
+                     Default = 1Gb
+        spaceType =  Type of Space created. 'managed' (default) or 'shared'. Only
+                     for Qlik SaaS Enterprise, not used to Qlik Business.
+        update    =  yes | no. If 'yes', the objects will be updatades. Apps will
+                     be localized by name and updated. Extensions will be deleted 
+        Publish   =  yes | no. Default is 'yes' and it publish the sheets and apps.
+                     if 'no', the space will not be created, the apps uploaded will
+                     not be published and their sheets also will stay unpublished. 
 
 ## Upload Files
 
 qlik_saas_upload_files.ps1
 
-Esse programa foi escrito para realizar upload de arquivos diversos direto para o ambiente SaaS.
+Esse script foi criado para realizar upload de arquivos diversos direto para o ambiente SaaS.
 Basta apontar o diretório/arquivos a serem carregados e o Espaço dentro do SaaS que o programa fará a carga. Use os parâmetros de sobrescrita (overwrite) para enviar os arquivos mesmo que existam no destino ou deixe o programa verificar quem é mais novo para manter o ambiente do SaaS atualizado.
 
-Usage:
+Sintaxe:
+
     qlik_saas_upload_files -fileNames <fileNames> [-spaceName <spaceName>] [-confirm <yes|no>]
         fileNames = The file name to be deleted. You can use wildcards like '*' and '?' to filter files. 
                     This parameter is mandatory.
@@ -62,7 +58,6 @@ Usage:
         overwrite = If yes, then SaaS files will be overwrited, even they are newer than local files. 
                     If no, only the files older than local files will be uploaded. 
                     Default is no.
-
     *** CAUTION: Each file is deleted before uploading and there no exists roll-back in SaaS upload files, so proceed with caution. 
 
 
@@ -73,9 +68,10 @@ qlik_saas_delete_files.ps1
 
 O programa qlik_saas_delete.ps1 apaga vários arquivos localizados em um Space do SaaS via linha de comando.
 
-Esse programa foi criado para facilitar operar o ambiente SaaS, quando houver uma grande quantidade de arquivos e se tornar difícil a operação de limpeza de forma manual.
+Criado para facilitar operar o ambiente SaaS, quando houver uma grande quantidade de arquivos e se tornar difícil a operação de limpeza de forma manual.
 
-Usage:
+Sintaxe:
+
     qlik_saas_delete_files -fileNames <fileNames> [-spaceName <spaceName>] [-date <date>] [-confirm <yes|no>]
         fileNames = The file name to be deleted. You can use wildcards like '*' and '?' to filter files. 
                     This parameter is mandatory.
@@ -94,11 +90,12 @@ Usage:
 
 qlik_saas_delete_users.ps1
 
-O programa qlik_saas_delete_users.ps1 apaga vários usuários por linha de comando do ambiente SaaS.
+Com o script qlik_saas_delete_users.ps1 é possível apaga vários usuários por linha de comando do ambiente SaaS.
 
-Esse programa foi criado para facilitar operar o ambiente SaaS, quando houver uma grande quantidade de usuários e se tornar difícil a operação de limpeza de forma manual.
+Criado para facilitar operar o ambiente SaaS, quando houver uma grande quantidade de usuários e se tornar difícil a operação de limpeza de forma manual.
 
-Usage:
+Sintaxe:
+
     qlik_saas_delete_users -userName <userName> [-confirm <yes|no>]
         userName = The user name that will be deleted, you can use a wild card like '*', '?' to filter users. 
                     Default is 'none'.
