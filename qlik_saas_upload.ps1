@@ -70,6 +70,10 @@ Instructions:
     
         You need to create and select the Qlik tenant before use this command, using qlik context.
 
+        You need to create 2 files at ~/.qlik:
+        - qcs-tenant.txt: This file must contains the tenant name without protocol, like: aditidemo.us.qlikcloud.com
+        - qcs-api_key.txt: This file must contains the api key to connect saas.
+        This informations are also inside ~/.qlik/context.yml
 
     Following the directory structure do use this command.
 
@@ -199,13 +203,6 @@ function Up-Apps {
 
 
 function Up-Files {
-
-
-    # Define your tenant URL
-    $tenant = Get-Content -Path ~/.qlik/qcs-tenant.txt
-
-    # Define your API key
-    $apikey = Get-Content -Path ~/.qlik/qcs-api_key.txt
 
     #Lista os subdiretórios do diretório raiz dos arquivos
     #Cada subdiretório se torna um Space, shared ou managed, conforme parâmetro
@@ -386,6 +383,16 @@ If (!(test-path $dirApps) -and !(test-path $dirFiles) -and !(test-path $dirTheme
     Show-Help
     return
 } 
+
+# Define your tenant URL
+$tenant = Get-Content -Path ~/.qlik/qcs-tenant.txt
+# Define your API key
+$apikey = Get-Content -Path ~/.qlik/qcs-api_key.txt
+If (!($tenant) -or !(apikey)) {
+    Write-Log -Severity "Error" -Message "Error You must create files (qcs-tenant.txt) and (qcs-api_key.txt) at ~/.qlik to upload files...";
+    Show-Help
+    return
+}
 
 # Version <=5
 # $qlikContext = qlik context get | ConvertFrom-String | where { ($_.P1 -eq 'Name:') }

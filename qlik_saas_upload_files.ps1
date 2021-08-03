@@ -54,6 +54,12 @@ Instructions:
     The API service will only receive files supported by Qlik SaaS, any other will be disregarded. Today the supported type files are
     '.qvd, .xlsx, .xls, .xlw, .xlsm, .xml, .csv, .txt, .tab, .qvo, .skv, .log, .html, .htm, .kml, .fix, .dat, .qvx, .prn, .php, .qvs'
 
+    You need to create 2 files at ~/.qlik:
+    - qcs-tenant.txt: This file must contains the tenant name without protocol, like: aditidemo.us.qlikcloud.com
+    - qcs-api_key.txt: This file must contains the api key to connect saas.
+    This informations are also inside ~/.qlik/context.yml
+
+
 Usage:
     qlik_saas_upload_files -fileNames <fileNames> [-spaceName <spaceName>] [-confirm <yes|no>]
         fileNames = The file name to be deleted. You can use wildcards like '*' and '?' to filter files. 

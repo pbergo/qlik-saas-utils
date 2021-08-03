@@ -53,7 +53,7 @@ Usage:
         userName = The user name that will be deleted, you can use a wild card like '*', '?' to filter users. 
                     Default is 'none'.
         confirm   = If yes, then users will be deleted. If no, the users that will be deleted only will listed at
-                    stdout. Defaul is no.
+                    stdout. Default is no.
     "
     Write-Output $helpMessage
     return
