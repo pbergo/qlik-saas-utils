@@ -23,9 +23,9 @@ Também possibilita apagar arquivos e usuários existentes no SaaS.
 
 ### Upload
 
-qlik_saas_upload.ps1
+[a relative link](qlik_saas_upload.ps1)
 
-O script qlik_saas_upload.ps1 faz o upload de vários arquivos localizados em subdiretórios determinados via linha de comando. 
+O script [a relative link](qlik_saas_upload.ps1) faz o upload de vários arquivos localizados em subdiretórios determinados via linha de comando. 
 
 Você pode subir Aplicativos (QVF), Arquivos (QVDs, XLSX, etc.), Extensões e Themas diretamente para o SaaS a partir de diretórios locais. Cada diretório local vira um Space dentro do SaaS e você ainda pode definir se ele será criado como 'Shared' ou 'Managed'. 
 
@@ -35,7 +35,7 @@ Esse programa foi criado para permitir automatizar o processo de carga e geraç�
 
 **Sintaxe:**
 
-    qlik_saas_upload -path [rootPath], -size [maxAppSize], -type [spaceType], -pub [yes|no]
+    qlik_saas_upload.ps1 -path [rootPath], -size [maxAppSize], -type [spaceType], -pub [yes|no]
         rootPath   = Path wich contains directories Apps, Themes and Extensions wich
                      contains the files to be upload. Any subdirectory inside Apps
                      will be created as a Space at Qlik Context. Default = './'
@@ -51,7 +51,7 @@ Esse programa foi criado para permitir automatizar o processo de carga e geraç�
 
 ## Upload Files
 
-qlik_saas_upload_files.ps1
+[a relative link](qlik_saas_upload_files.ps1)
 
 Esse script foi criado para realizar upload de arquivos diversos direto para o ambiente SaaS.
 
@@ -61,7 +61,7 @@ Use os parâmetros de sobrescrita (overwrite) para enviar os arquivos mesmo que 
 
 Sintaxe:
 
-    qlik_saas_upload_files -fileNames <fileNames> [-spaceName <spaceName>] [-confirm <yes|no>]
+    qlik_saas_upload_files.ps1 -fileNames <fileNames> [-spaceName <spaceName>] [-confirm <yes|no>]
         fileNames = The file name to be deleted. You can use wildcards like '*' and '?' to filter files. 
                     This parameter is mandatory.
         spaceName = The Name of Space wich has the files that will be deleted. Leave it blank to use the 
@@ -76,15 +76,15 @@ Sintaxe:
 
 ## Delete Files
 
-qlik_saas_delete_files.ps1
+[a relative link](qlik_saas_delete_files.ps1)
 
-O programa qlik_saas_delete.ps1 apaga vários arquivos localizados em um Space do SaaS via linha de comando.
+O programa [a relative link](qlik_saas_delete.ps1) apaga vários arquivos localizados em um Space do SaaS via linha de comando.
 
 Criado para facilitar operar o ambiente SaaS, quando houver uma grande quantidade de arquivos e se tornar difícil a operação de limpeza de forma manual.
 
 Sintaxe:
 
-    qlik_saas_delete_files -fileNames <fileNames> [-spaceName <spaceName>] [-date <date>] [-confirm <yes|no>]
+    qlik_saas_delete_files.ps1 -fileNames <fileNames> [-spaceName <spaceName>] [-date <date>] [-confirm <yes|no>]
         fileNames = The file name to be deleted. You can use wildcards like '*' and '?' to filter files. 
                     This parameter is mandatory.
         spaceName = The Name of Space wich has the files that will be deleted. Leave it blank to use the 
@@ -100,15 +100,15 @@ Sintaxe:
 
 ## Delete Users
 
-qlik_saas_delete_users.ps1
+[a relative link](qlik_saas_delete_users.ps1)
 
-Com o script qlik_saas_delete_users.ps1 é possível apaga vários usuários por linha de comando do ambiente SaaS.
+Com o script [a relative link](qlik_saas_delete_users.ps1) é possível apaga vários usuários por linha de comando do ambiente SaaS.
 
 Criado para facilitar operar o ambiente SaaS, quando houver uma grande quantidade de usuários e se tornar difícil a operação de limpeza de forma manual.
 
 Sintaxe:
 
-    qlik_saas_delete_users -userName <userName> [-confirm <yes|no>]
+    qlik_saas_delete_users.ps1 -userName <userName> [-confirm <yes|no>]
         userName = The user name that will be deleted, you can use a wild card like '*', '?' to filter users. 
                     Default is 'none'.
         confirm   = If yes, then users will be deleted. If no, the users that will be deleted only will listed at
@@ -116,9 +116,9 @@ Sintaxe:
 
 
 ## Instalação
-Para instalar os arquivos, baixe o zip QLIK_SAAS_UTILS.ZIP e descompate-o em um diretório. Se necessário, coloque o na PATH do seu ambiente. Em seguida basta executar qualquer script pela linha de comando.
+Para instalar os arquivos, baixe o zip [a relative link](qlik_saas_utils.zip) e descompacte-o em um diretório. Se necessário, coloque o na PATH do seu ambiente. Em seguida basta executar qualquer script pela linha de comando.
 
-Os programas foram testados em ambientes MS-Windows 10, MS-WIndows Server 2012 R2 e Linux Mint 20.1, o que dá um boa margem de compatibilidade.
+Os programas foram testados em ambientes *MS-Windows 10, MS-WIndows Server 2012 R2 e Linux Mint 20.1*, o que dá um boa margem de compatibilidade.
 
 Para usa-los será necessário:
 
