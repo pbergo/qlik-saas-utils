@@ -236,14 +236,16 @@ function Up-Files {
             #Trata as conexões do espaço personal
             if ($subDirectoryName -eq 'personal') {
                 $spacename = 'personal'
-                $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?name=$($localfile.BaseName)"
+                $encodedLocalFile = [uri]::EscapeDataString($localfile.Name);
+                $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?name=$($encodedLocalFile)"
                 $existfile = qlik raw get v1/qix-datafiles --query top=100000 | ConvertFrom-Json | Where-Object {($_.name -like $localfile.Name)}
             } else {
                 #Faz o upload para a shared spaces ou para managed spaces
                 $space = qlik space filter --names "$subDirectoryName" | ConvertFrom-Json
                 $spacename = $subDirectoryName
                 $dataconnection = qlik raw get v1/data-connections --query space="$($spaces.id)" | ConvertFrom-Json | Where-Object {$_.qName -eq 'DataFiles' }
-                $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?connectionid=$($dataconnection.id)&name=$($localfile.Name)"
+                $encodedLocalFile = [uri]::EscapeDataString($localfile.Name);
+                $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?connectionid=$($dataconnection.id)&name=$($encodedLocalFile)"
                 $existfile = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)",top=100000 | ConvertFrom-Json | Where-Object {($_.name -like $localfile.Name)}
             }
 
@@ -388,7 +390,7 @@ If (!(test-path $dirApps) -and !(test-path $dirFiles) -and !(test-path $dirTheme
 $tenant = Get-Content -Path ~/.qlik/qcs-tenant.txt
 # Define your API key
 $apikey = Get-Content -Path ~/.qlik/qcs-api_key.txt
-If (!($tenant) -or !(apikey)) {
+If (!($tenant) -or !($apikey)) {
     Write-Log -Severity "Error" -Message "Error You must create files (qcs-tenant.txt) and (qcs-api_key.txt) at ~/.qlik to upload files...";
     Show-Help
     return

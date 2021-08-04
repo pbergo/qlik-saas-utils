@@ -200,19 +200,19 @@ Para isso, faça o seguinte:
 
  - Abra um bloco de notas e insira o nome do tenant, **SEM** o protocolo
    (https://) p.ex. tenant.us.qlikcloud.com 
-  - Salvar --> Nome do arquivo *%HOMEPATH%/.qlik/qcs_tenant.txt*
+  - Salvar --> Nome do arquivo *%HOMEPATH%/qlik/qcs-tenant.txt*
       - (Prá quem não sabe, *%HOMEPATH%* é o diretório raiz do usuário logado)
   - Abra um novo bloco de notas e insira a chave API, aquela mesma informada no Passo 1.
-  - Depois clique em Salvar --> Nome do arquivo *%HOMEPATH%/.qlik/qcs_api-key.txt*
+  - Depois clique em Salvar --> Nome do arquivo *%HOMEPATH%/.qlik/qcs-api_key.txt*
  
 *Linux / Mac*
 
  - Abra um bloco de notas (nano, editor ou sublime) e insira o nome do tenant, **SEM** o protocolo
    (https://) p.ex. tenant.us.qlikcloud.com 
-  - Salvar --> Nome do arquivo *~/.qlik/qcs_tenant.txt*  
+  - Salvar --> Nome do arquivo *~/.qlik/qcs-tenant.txt*  
       - (Prá quem não sabe, *~/* é o diretório raiz do usuário logado) 
   - Abra um novo bloco de notas e insira a chave API, aquela mesma informada no Passo 1.
-  - Depois clique em Salvar --> Nome do arquivo *~/.qlik/qcs_api-key.txt*
+  - Depois clique em Salvar --> Nome do arquivo *~/.qlik/qcs-api_key.txt*
  
 
 Pronto, agora é só usar os comandos !

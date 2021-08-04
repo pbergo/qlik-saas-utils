@@ -94,12 +94,6 @@ function ConvPropert {
 
 
 function Up-Files {
-    # Define your tenant URL
-    $tenant = Get-Content -Path ~/.qlik/qcs-tenant.txt
-
-    # Define your API key
-    $apikey = Get-Content -Path ~/.qlik/qcs-api_key.txt
-
     #Localiza os espaços existentes no servidor
     if ($spaceName -eq 'personal') {
         Write-Log -Message "Using space Personal !";
@@ -131,11 +125,13 @@ function Up-Files {
 
         #Verifica se o arquivo existe no destino
         if ($spaceName -eq 'personal') {
-            $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?name=$($localfile.BaseName)"
+            $encodedLocalFile = [uri]::EscapeDataString($localfile.Name);
+            $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?name=$($encodedLocalFile)"
             $existfile = $saasfiles | Where-Object {($_.name -like $localfile.Name)}
         } else {
             #Faz o upload para a shared spaces ou para managed spaces
-            $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?connectionid=$($dataconnection.id)&name=$($localfile.Name)"
+            $encodedLocalFile = [uri]::EscapeDataString($localfile.Name);
+            $urlcmd = "https://$($tenant)/api/v1/qix-datafiles?connectionid=$($dataconnection.id)&name=$($encodedLocalFile)"
             $existfile = $saasfiles | Where-Object {($_.name -like $localfile.Name)}
         }
         if ($localfile.Length -gt $maxFileSize) {
@@ -193,6 +189,15 @@ if ( (PowerVersion) ) {
 $qlikContext = qlik context get 
 if ($qlikContext -eq 'No current context'){
     Write-Log -Severity 'Error' -Message "Error You must create and select a context to upload files";
+    Show-Help
+    return
+}
+# Define your tenant URL
+$tenant = Get-Content -Path ~/.qlik/qcs-tenant.txt
+# Define your API key
+$apikey = Get-Content -Path ~/.qlik/qcs-api_key.txt
+If (!($tenant) -or !($apikey)) {
+    Write-Log -Severity "Error" -Message "Error You must create files (qcs-tenant.txt) and (qcs-api_key.txt) at ~/.qlik to upload files...";
     Show-Help
     return
 }
