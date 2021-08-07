@@ -13,8 +13,8 @@
 
 ###### Parametros da aplicação
 Param (
-    [Parameter()][alias("users")][string]$userName = 'none',                      #Usuários a serem eliminados
-    [Parameter()][alias("emails")][string]$emailName = 'none',                    #emails dos Usuários a serem eliminados
+    [Parameter()][alias("user")][string]$userName = 'none',                      #Usuários a serem eliminados
+    [Parameter()][alias("email")][string]$emailName = 'none',                    #emails dos Usuários a serem eliminados
     [Parameter()][alias("conf")][string]$confirm    = 'no'                        #Determina se executa ou não o comando
 )
 
@@ -49,8 +49,10 @@ Instructions:
     If you set the Confirm parameter to 'no', nothing will be done, just the users names will be listed. 
 
 Usage:
-    qlik_saas_delete_users -userName <userName> [-confirm <yes|no>]
+    qlik_saas_delete_users [-userName <userName>] [-emailName <email>] [-confirm <yes|no>]
         userName = The user name that will be deleted, you can use a wild card like '*', '?' to filter users. 
+                    Default is 'none'.
+        emailName = The email that will be deleted, you can use a wild card like '*', '?' to filter users. 
                     Default is 'none'.
         confirm   = If yes, then users will be deleted. If no, the users that will be deleted only will listed at
                     stdout. Default is no.
@@ -113,6 +115,11 @@ if ($qlikContext -eq 'No current context'){
     return
 }
 $qlikContextName = (qlik context get)[0].replace(' ','').split(':')[1]
+
+if (($userName -eq 'none') -and ($emailName -eq 'none')) {
+    Show-Help
+    return
+}
 
 Write-Log -Message "#################################################"
 ###### Delete specified users...
