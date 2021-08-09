@@ -14,8 +14,8 @@
 ###### Parametros da aplicação
 Param (
     [Parameter()][alias("path")][string]$rootPath   = './',           #Diretório raiz
-    [Parameter()][alias("size")][bigint]$maxAppSize   = 1073741824,   #TamMáximo da App 1Gb --> Parametro importante para diferir do QSB ou QSaaS
-    [Parameter()][alias("size")][bigint]$maxFileSize  = 629145600,    #TamMáximo dos arquivos = 600Mb
+    [Parameter()][alias("appsize")][bigint]$maxAppSize   = 1073741824,   #TamMáximo da App 1Gb --> Parametro importante para diferir do QSB ou QSaaS
+    [Parameter()][alias("filesize")][bigint]$maxFileSize  = 629145600,    #TamMáximo dos arquivos = 600Mb
     [Parameter()][alias("type")][string]$spaceType = 'managed',       #Tipo de space a ser criado
     [Parameter()][alias("upfile")][string]$update = 'no',             #Determina se os arquivos serão atualizados ou substituídos em caso das extensões e themas
     [Parameter()][alias("pub")][string]$Publish   = 'yes'             #Determina se fara a publicação das pastas ou apps

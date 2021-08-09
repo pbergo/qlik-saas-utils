@@ -100,7 +100,7 @@ Sintaxe:
 
 ## Delete Users
 
-[qlik_saas_delete_users.ps1](qlik_saas_upload.ps1](qlik_saas_delete_users.ps1)
+[qlik_saas_delete_users.ps1](qlik_saas_delete_users.ps1)
 
 Com o script [qlik_saas_delete_users.ps1](qlik_saas_delete_users.ps1) é possível apaga vários usuários por linha de comando do ambiente SaaS.
 
