@@ -108,8 +108,10 @@ Criado para facilitar operar o ambiente SaaS, quando houver uma grande quantidad
 
 Sintaxe:
 
-    qlik_saas_delete_users.ps1 -userName <userName> [-confirm <yes|no>]
+    qlik_saas_delete_users [-userName <userName>] [-emailName <email>] [-confirm <yes|no>]
         userName = The user name that will be deleted, you can use a wild card like '*', '?' to filter users. 
+                    Default is 'none'.
+        emailName = The email that will be deleted, you can use a wild card like '*', '?' to filter users. 
                     Default is 'none'.
         confirm   = If yes, then users will be deleted. If no, the users that will be deleted only will listed at
                     stdout. Default is no.
