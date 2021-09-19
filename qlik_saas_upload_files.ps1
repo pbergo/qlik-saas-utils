@@ -104,7 +104,7 @@ function Up-Files {
             Write-Log -Message "Using space [$spaceName] ID [$($spaces.id)] !";
             $dataconnection = qlik raw get v1/data-connections --query space="$($spaces.id)" | ConvertFrom-Json | Where-Object {$_.qName -eq 'DataFiles' }
         } else {
-            Write-Log -Severity "Error" -Message "Error the space [$($spaceName)] doesn't exists !";
+            Write-Log -Severity "Error" -Message "The space [$($spaceName)] doesn't exists !";
             return
         }
 
@@ -160,8 +160,9 @@ function Up-Files {
         if ($uploadfile) {
             Write-Log -Message "Uploading new File [$($localfile.Name)] to space [$spaceName] !";
             $UppedFile = curl -k -s X POST --header "Authorization: Bearer $($apikey)" --header "content-type: multipart/form-data" -F data=@"$($localfile.FullName)"  $urlcmd | ConvertFrom-Json
-            if ($?) { 
-                Write-Log -Message "File [$($localfile.Name)] uploaded Id [$($UppedFile.id)]";
+            if ($?) {
+                $localfileMb = [math]::Round(($localfile.Length / 1Mb),2) 
+                Write-Log -Message "File [$($localfile.Name)] uploaded Id [$($UppedFile.id)] size [$($localfileMb)Mb]";
             } else {
                 Write-Log -Severity "Error" -Message "Error uploading File [$($localfile.Name)]";
             }
@@ -188,7 +189,7 @@ if ( (PowerVersion) ) {
 #Check if exists context
 $qlikContext = qlik context get 
 if ($qlikContext -eq 'No current context'){
-    Write-Log -Severity 'Error' -Message "Error You must create and select a context to upload files";
+    Write-Log -Severity 'Error' -Message "You must create and select a context to upload files";
     Show-Help
     return
 }
@@ -197,7 +198,7 @@ $tenant = Get-Content -Path ~/.qlik/qcs-tenant.txt
 # Define your API key
 $apikey = Get-Content -Path ~/.qlik/qcs-api_key.txt
 If (!($tenant) -or !($apikey)) {
-    Write-Log -Severity "Error" -Message "Error You must create files (qcs-tenant.txt) and (qcs-api_key.txt) at ~/.qlik to upload files...";
+    Write-Log -Severity "Error" -Message "You must create files (qcs-tenant.txt) and (qcs-api_key.txt) at ~/.qlik to upload files...";
     Show-Help
     return
 }
