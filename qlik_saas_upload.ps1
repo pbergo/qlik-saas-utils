@@ -404,7 +404,7 @@ $qlikContextName = $qlikContext[0].replace(' ','').split(':')[1]
 
 
 Write-Log -Message "#################################################"
-###### Faz upload das Aplicações, cria e publica os Spaces
+Write-Log -Message "###### Faz upload das Aplicações, cria e publica os Spaces"
 
 Write-Log -Message "Starting uploading files to context [$($qlikContextName)]"
 If((test-path $dirApps))    { Write-Log -Message "Application (QVF | QVW) directory used is [$($dirApps)]"      } else { Write-Log -Severity 'Warn' -Message "No apps directory found"}
