@@ -18,7 +18,7 @@ Também possibilita apagar arquivos e usuários existentes no SaaS.
 
 -[Delete Users](#delete_users)
 
--[Change Owner](#change-ownser)
+-[Change Owner](#change-owner)
 
 -[Instalação](#instalation)
 
@@ -126,7 +126,7 @@ Sintaxe:
 
 
 
-## Change Ownser
+## Change Owner
 
 [qlik_saas_change_owner.ps1](qlik_saas_change_owner.ps1)
 
