@@ -39,7 +39,7 @@ function Write-Log {
 function Show-Help {
     $helpMessage = "
     
-qlik_saas_delete_files is a command line to delete multiple data files inside any authorized SaaS Space of your tenant.
+$((Get-Item $PSCommandPath).BaseName) is a command line to delete multiple data files inside any authorized SaaS Space of your tenant.
 
 Instructions:
     The space must contain the name of SaaS Space wich has the files that will be deleted. You can specify
@@ -48,7 +48,7 @@ Instructions:
     If you set the Confirm parameter to 'no', nothing will be done, just the file names will be listed.
 
 Usage:
-$((Get-Item $PSCommandPath).BaseName) -fileNames <fileNames> [-spaceName <spaceName>] [-date <date>] [-confirm <yes|no>] [-LogFile 'Logfile path and name']
+    $((Get-Item $PSCommandPath).BaseName) -fileNames <fileNames> [-spaceName <spaceName>] [-date <date>] [-confirm <yes|no>] [-LogFile <Logfile path and name>]
         fileNames = The file name to be deleted. You can use wildcards like '*' and '?' to filter files. 
                     This parameter is mandatory.
         spaceName = The Name of Space wich has the files that will be deleted. Leave it blank to use the 
@@ -122,11 +122,13 @@ $Param = [pscustomobject]@{
     'fileNames' = $fileNames
     'dateFiles' = $dateFiles        
     'confirm' = $confirm        
+    'LogFile' = $LogFile
 }
 $spaceName = $Param.spaceName
 $fileNames = $Param.fileNames
 $dateFiles = $Param.dateFiles
 $confirm   = $Param.confirm
+$LogFile = $Param.LogFile
 
 #Validações iniciais
 

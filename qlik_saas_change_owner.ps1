@@ -4,10 +4,10 @@
 #
 # Change the owner of apps
 #
-# (c) Pedro Bergo - pedroabergo@gmail.com - 2022
+# (c) Pedro Bergo - pedroabergo@gmail.com - 2023
 #
-# PowerShell 7.1.3
-# qlik-cli 2.3.1
+# PowerShell 7.2.13
+# qlik-cli 2.22.13
 #
 #################################################################################
 
@@ -17,7 +17,8 @@ Param (
     [Parameter()][alias("nowner")][string]$NewOwner = 'none',                   #Actual (or Old) owner name
     [Parameter()][alias("files")][string]$fileNames = 'none',                   #Apps a serem movidos
     [Parameter()][alias("space")][string]$spaceName = 'Personal',               #Space containing apps a serem movidos
-    [Parameter()][alias("pub")][string]$publish = 'yes'                         #Publica sheets, stories e bookmarks antes de mover para o novo usuário
+    [Parameter()][alias("pub")][string]$publish = 'yes',                         #Publica sheets, stories e bookmarks antes de mover para o novo usuário
+    [Parameter()][string]$LogFile = '.\' + (Get-Item $PSCommandPath).BaseName + '.log'         # Log file name and path
 )
 
 ###### Funções
@@ -43,7 +44,7 @@ function PowerVersion {
 function Show-Help {
     $helpMessage = "
     
-qlik_saas_change_owner is a command line to change owner and info with one command line.
+$((Get-Item $PSCommandPath).BaseName) is a command line to change owner and info with one command line.
 
 Instructions:
 The space must contain the name of SaaS Space wich has the files that will be deleted. You can specify
@@ -52,7 +53,7 @@ the name files and / or older files date to date parameter, writed in dd-mm-yyy 
 If you set the Confirm parameter to 'no', nothing will be done, just the file names will be listed.
 
 Usage:
-qlik_saas_change_owner.ps1 -oldOwner <oldUserID> -newOwner <newUserID> [-fileNames <fileNames>] [-confirm <yes|no>]
+    $((Get-Item $PSCommandPath).BaseName) -oldOwner <oldUserID> -newOwner <newUserID> [-fileNames <fileNames>] [-confirm <yes|no>] [-LogFile <Logfile path and name>]
     oldOwner  = The ID to owner to be used. 
                 This parameter is mandatory.
     newOwner  = The Id to new owner to be used. 
@@ -63,13 +64,15 @@ qlik_saas_change_owner.ps1 -oldOwner <oldUserID> -newOwner <newUserID> [-fileNam
                 Default is 'Personal'
     publish   = Publish all sheets, stories and bookmarks before moving it to new user
                 Default is yes
-    "
+    LogFile   = Logfile path and name. 
+                Default is .\" + $(Get-Item $PSCommandPath).BaseName + ".log
+"
     Write-Output $helpMessage
     return
 }
 
 function moveOwner  {
-    $spaces = qlik space filter --names "$($spaceName)" | ConvertFrom-Json
+    $spaces = qlik space ls --name "$($spaceName)" | ConvertFrom-Json
     if (($?) -or ($spaceName -eq 'personal')) {
         if ($spaceName -eq 'Personal') {
             if ($fileNames -eq 'none') {
@@ -127,8 +130,24 @@ function moveOwner  {
     }
 }
 
+#################################################################################
 ###### Código principal
-#Validações iniciais
+$Param = [pscustomobject]@{
+    'OldOwner' = $OldOwner
+    'NewOwner' = $NewOwner
+    'fileNames' = $fileNames        
+    'spaceName' = $spaceName        
+    'publish' = $publish
+    'LogFile' = $LogFile
+}
+$OldOwner = $Param.OldOwner
+$NewOwner = $Param.NewOwner
+$fileNames = $Param.fileNames        
+$spaceName = $Param.spaceName        
+$publish = $Param.publish
+$LogFile = $Param.LogFile
+
+
 if ( (PowerVersion) ) {
     $message = "
     *********************************************************************************************

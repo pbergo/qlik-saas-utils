@@ -4,10 +4,10 @@
 #
 # Upload Apps, Files, Extensions and Thems to SaaS
 #
-# (c) Pedro Bergo - pedroabergo@gmail.com - 2021
+# (c) Pedro Bergo - pedroabergo@gmail.com - 2023
 #
-# PowerShell 7.1.3
-# qlik-cli 2.3.1
+# PowerShell 7.2.13
+# qlik-cli 2.22.13
 #
 #################################################################################
 
@@ -18,7 +18,8 @@ Param (
     [Parameter()][alias("filesize")][bigint]$maxFileSize  = 629145600,    #TamMáximo dos arquivos = 600Mb
     [Parameter()][alias("type")][string]$spaceType = 'managed',       #Tipo de space a ser criado
     [Parameter()][alias("upfile")][string]$update = 'no',             #Determina se os arquivos serão atualizados ou substituídos em caso das extensões e themas
-    [Parameter()][alias("pub")][string]$Publish   = 'yes'             #Determina se fara a publicação das pastas ou apps
+    [Parameter()][alias("pub")][string]$Publish   = 'yes',             #Determina se fara a publicação das pastas ou apps
+    [Parameter()][string]$LogFile = '.\' + (Get-Item $PSCommandPath).BaseName + '.log'         # Log file name and path
 )
 
 ###### Funções
@@ -44,7 +45,7 @@ function PowerVersion {
 function Show-Help {
     $helpMessage = "
     
-qlik_saas_upload is a command line to upload multiple files like apps, files, extensions and themes to a qlik saas tenant with one command line.
+$((Get-Item $PSCommandPath).BaseName) is a command line to upload multiple files like apps, files, extensions and themes to a qlik saas tenant with one command line.
 
 Instructions:
     The root path must to contain folders named 'Apps', 'Files', 'Extensions' and/or 'Themes' that will be uploaded.
@@ -90,9 +91,8 @@ Instructions:
     +--> Themes
           +--> Theme.zip
 
-
 Usage:
-    qlik_saas_upload -path [rootPath], -size [maxAppSize], -type [spaceType], -pub [yes|no]
+    $((Get-Item $PSCommandPath).BaseName) -path [rootPath], -size [maxAppSize], -type [spaceType], -pub [yes|no] [-LogFile <Logfile path and name>]
         rootPath = Path wich contains directories Apps, Themes and Extensions wich contains the files to 
                    be upload
                    Any subdirectory inside Apps will be created as a Space at Qlik Context
@@ -105,7 +105,9 @@ Usage:
                  Extensions will be deleted 
         Publish = yes | no. if 'no', the space will not be created, the apps uploaded will not be published 
                   and their sheets also will stay unpublished. 
-    "
+        LogFile   = Logfile path and name. 
+                  Default is .\" + (Get-Item $PSCommandPath).BaseName + ".log
+  "
     Write-Output $helpMessage
     return
 }
@@ -133,7 +135,7 @@ function Up-Apps {
     foreach ($subDirectory in $apps) {
         #Lista os espaços existentes no servidor
         $subDirectoryName = $subDirectory.Name
-        $spaces = qlik space filter --names "$subDirectoryName" | ConvertFrom-Json
+        $spaces = qlik space ls --name "$subDirectoryName" | ConvertFrom-Json
 
         #Cria o space caso não exista e não for personal
         if (($spaces.name -ne $subDirectory.Name) -and ($Publish -ne "no") -and ($subDirectory.Name -ne 'Personal')) {
@@ -150,7 +152,7 @@ function Up-Apps {
         $files = gci $dirApps/$subDirectoryName/*.qv[f-w] -File | Where-Object -FilterScript {($_.Length -le $maxAppSize)}
         foreach ($file in $files) {
             #Faz o upload para a shared spaces ou para managed spaces
-            $space = qlik space filter --names "$subDirectoryName" | ConvertFrom-Json
+            $space = qlik space ls --name "$subDirectoryName" | ConvertFrom-Json
 
             Write-Log -Message "Uploading new app [$($file.BaseName)]";
             $UppedApp = qlik app import -f "$($file)" --fallbackName "$file.Name" | ConvertFrom-Json;
@@ -213,7 +215,7 @@ function Up-Files {
     foreach ($subDirectory in $datafiles) {
         #Lista os espaços existentes no servidor
         $subDirectoryName = $subDirectory.Name
-        $spaces = qlik space filter --names "$subDirectoryName" | ConvertFrom-Json
+        $spaces = qlik space ls --name "$subDirectoryName" | ConvertFrom-Json
 
         #Cria o space caso não exista e não for personal
         if (($spaces.name -ne $subDirectory.Name) -and ($Publish -ne "no") -and ($subDirectory.Name -ne "Personal")) {
@@ -241,7 +243,7 @@ function Up-Files {
                 $existfile = qlik raw get v1/qix-datafiles --query top=100000 | ConvertFrom-Json | Where-Object {($_.name -like $localfile.Name)}
             } else {
                 #Faz o upload para a shared spaces ou para managed spaces
-                $space = qlik space filter --names "$subDirectoryName" | ConvertFrom-Json
+                $space = qlik space ls --name "$subDirectoryName" | ConvertFrom-Json
                 $spacename = $subDirectoryName
                 $dataconnection = qlik raw get v1/data-connections --query space="$($spaces.id)" | ConvertFrom-Json | Where-Object {$_.qName -eq 'DataFiles' }
                 $encodedLocalFile = [uri]::EscapeDataString($localfile.Name);
@@ -351,8 +353,25 @@ Function Up-Themes {
     }
 }
 
-
+#################################################################################
 ###### Código principal
+$Param = [pscustomobject]@{
+    'rootPath' = $rootPath
+    'maxAppSize' = $maxAppSize
+    'maxFileSize' = $maxFileSize        
+    'spaceType' = $spaceType        
+    'update' = $update        
+    'Publish' = $Publish        
+    'LogFile' = $LogFile
+}
+$rootPath = $Param.rootPath
+$maxAppSize = $Param.maxAppSize
+$maxFileSize   = $Param.maxFileSize
+$spaceType   = $Param.spaceType
+$update   = $Param.update
+$Publish   = $Param.Publish
+$LogFile = $Param.LogFile
+
 #Validações iniciais
 #Check if exists context
 if ( (PowerVersion) ) {

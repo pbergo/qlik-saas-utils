@@ -4,10 +4,10 @@
 #
 # Upload Files to SaaS
 #
-# (c) Pedro Bergo - pedroabergo@gmail.com - 2021
+# (c) Pedro Bergo - pedroabergo@gmail.com - 2023
 #
-# PowerShell 7.1.3
-# qlik-cli 2.3.1
+# PowerShell 7.2.13
+# qlik-cli 2.22.13
 #
 #################################################################################
 
@@ -16,7 +16,8 @@ Param (
     [Parameter()][alias("space")][string]$spaceName   = 'personal',           #Espaço a ser utilizado.
     [Parameter()][alias("size")][bigint]$maxFileSize  = 629145600,            #TamMáximo dos arquivos = 600Mb
     [Parameter()][alias("files")][string]$fileNames   = 'none',               #Arquivos a serem eliminados
-    [Parameter()][alias("ovw")][string]$overwrite     = 'no'                  #Determina se grava os mais novos ou todos
+    [Parameter()][alias("ovw")][string]$overwrite     = 'no',                  #Determina se grava os mais novos ou todos
+    [Parameter()][string]$LogFile = '.\' + (Get-Item $PSCommandPath).BaseName + '.log'         # Log file name and path
 )
 
 ###### Funções
@@ -42,7 +43,7 @@ function PowerVersion {
 function Show-Help {
     $helpMessage = "
     
-qlik_saas_upload_files is a command line to upload files from local folder to specified SaaS space.
+$((Get-Item $PSCommandPath).BaseName) is a command line to upload files from local folder to specified SaaS space.
 
 Instructions:
     You need to specify the folder/files Name that contais the files to be uploaded. You can use wildcards like '*' and '?'.
@@ -61,7 +62,7 @@ Instructions:
 
 
 Usage:
-    qlik_saas_upload_files -fileNames <fileNames> [-spaceName <spaceName>] [-confirm <yes|no>]
+    $((Get-Item $PSCommandPath).BaseName)  -fileNames <fileNames> [-spaceName <spaceName>] [-confirm <yes|no>] [-LogFile <Logfile path and name>]
         fileNames = The file name to be deleted. You can use wildcards like '*' and '?' to filter files. 
                     This parameter is mandatory.
         spaceName = The Name of Space wich has the files that will be deleted. Leave it blank to use the 
@@ -70,6 +71,8 @@ Usage:
         overwrite = If yes, then SaaS files will be overwrited, even they are newer than local files. 
                     If no, only the files older than local files will be uploaded. 
                     Default is no.
+        LogFile   = Logfile path and name. 
+                    Default is .\" + (Get-Item $PSCommandPath).BaseName + ".log
 
     *** CAUTION: Each file is deleted before uploading and there no exists roll-back in SaaS upload files, so proceed with caution. 
 
@@ -99,7 +102,7 @@ function Up-Files {
         Write-Log -Message "Using space Personal !";
         $dataconnection = qlik raw get v1/data-connections | ConvertFrom-Json | Where-Object { ($_.qName -eq 'DataFiles') -and ($_.space -eq $null) }
     } else {
-        $spaces = qlik space filter --names "$spaceName" | ConvertFrom-Json
+        $spaces = qlik space ls --name "$spaceName" | ConvertFrom-Json
         if ($spaces) {
             Write-Log -Message "Using space [$spaceName] ID [$($spaces.id)] !";
             $dataconnection = qlik raw get v1/data-connections --query space="$($spaces.id)" | ConvertFrom-Json | Where-Object {$_.qName -eq 'DataFiles' }
@@ -170,8 +173,21 @@ function Up-Files {
     }
 }
 
-
+#################################################################################
 ###### Código principal
+$Param = [pscustomobject]@{
+    'spaceName' = $spaceName
+    'maxFileSize' = $maxFileSize
+    'fileNames' = $fileNames        
+    'overwrite' = $overwrite        
+    'LogFile' = $LogFile
+}
+$spaceName = $Param.spaceName
+$maxFileSize = $Param.maxFileSize
+$fileNames   = $Param.fileNames
+$overwrite   = $Param.overwrite
+$LogFile = $Param.LogFile
+
 #Validações iniciais
 if ( (PowerVersion) ) {
     $message = "
