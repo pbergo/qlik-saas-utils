@@ -35,7 +35,7 @@ Esse programa foi criado para permitir automatizar o processo de carga e geraç�
 
 **Sintaxe:**
 
-    qlik_saas_upload.ps1 -path [rootPath], -size [maxAppSize], -type [spaceType], -pub [yes|no]
+    qlik_saas_upload.ps1 -path [rootPath], -size [maxAppSize], -type [spaceType], -pub [yes|no] [-LogFile <Logfile path and name>]
         rootPath   = Path wich contains directories Apps, Themes and Extensions wich
                      contains the files to be upload. Any subdirectory inside Apps
                      will be created as a Space at Qlik Context. Default = './'
@@ -48,6 +48,8 @@ Esse programa foi criado para permitir automatizar o processo de carga e geraç�
         Publish   =  yes | no. Default is 'yes' and it publish the sheets and apps.
                      if 'no', the space will not be created, the apps uploaded will
                      not be published and their sheets also will stay unpublished. 
+        LogFile   = Logfile path and name. 
+                     Default is .\qlik_saas_upload.log
 
 ## Upload Files
 
@@ -61,7 +63,7 @@ Use os parâmetros de sobrescrita (overwrite) para enviar os arquivos mesmo que 
 
 Sintaxe:
 
-    qlik_saas_upload_files.ps1 -fileNames <fileNames> [-spaceName <spaceName>] [-confirm <yes|no>]
+    qlik_saas_upload_files.ps1 -fileNames <fileNames> [-spaceName <spaceName>] [-confirm <yes|no>] [-LogFile <Logfile path and name>]
         fileNames = The file name to be deleted. You can use wildcards like '*' and '?' to filter files. 
                     This parameter is mandatory.
         spaceName = The Name of Space wich has the files that will be deleted. Leave it blank to use the 
@@ -94,6 +96,8 @@ Sintaxe:
                     Default is today.
         confirm   = If yes, then files will be deleted. If no, the files only will be listed at stdout. 
                     Default is no.
+        LogFile   = Logfile path and name. 
+                    Default is .\qlik_saas_delete_files.log
 
 
 
@@ -108,13 +112,38 @@ Criado para facilitar operar o ambiente SaaS, quando houver uma grande quantidad
 
 Sintaxe:
 
-    qlik_saas_delete_users [-userName <userName>] [-emailName <email>] [-confirm <yes|no>]
+    qlik_saas_delete_users [-userName <userName>] [-emailName <email>] [-confirm <yes|no>] [-LogFile <Logfile path and name>]
         userName = The user name that will be deleted, you can use a wild card like '*', '?' to filter users. 
                     Default is 'none'.
         emailName = The email that will be deleted, you can use a wild card like '*', '?' to filter users. 
                     Default is 'none'.
         confirm   = If yes, then users will be deleted. If no, the users that will be deleted only will listed at
                     stdout. Default is no.
+        LogFile   = Logfile path and name. 
+                    Default is .\qlik_saas_delete_users.log
+
+## Change Ownser
+
+[qlik_saas_change_owner.ps1](qlik_saas_change_owner.ps1)
+
+Com o script [qlik_saas_change_owner.ps1](qlik_saas_change_owner.ps1) é possível alterar o dono da aplicação e de seus objetos. 
+
+Quando um usuário é removido ou quando perde o acesso ao SaaS, pode-se usar o recurso de alterar o proprietário da app, entretanto, nem todos os objetos são alterados pelo produto padrão, como por exemplo, as pastas não publicadas. Essa rotina tenta cobrir as lacunas de alteração de proprietários e ainda possibilita publicar pastas de um usuário.
+
+Sintaxe:
+    qlik_change_owner -oldOwner <oldUserID> -newOwner <newUserID> [-fileNames <fileNames>] [-confirm <yes|no>] [-LogFile <Logfile path and name>]
+        oldOwner  = The ID to owner to be used. 
+                    This parameter is mandatory.
+        newOwner  = The Id to new owner to be used. 
+                    This parameter is mandatory.
+        fileNames = The Name of Apps, you can use wildcards.
+                    Default is all files from oldOwner
+        spaceName = The name of Space.
+                    Default is 'Personal'
+        publish   = Publish all sheets, stories and bookmarks before moving it to new user
+                    Default is yes
+        LogFile   = Logfile path and name. 
+                    Default is .\qlik_change_owner.log
 
 
 ## Instalação
