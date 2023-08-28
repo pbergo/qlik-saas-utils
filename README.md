@@ -18,6 +18,8 @@ Também possibilita apagar arquivos e usuários existentes no SaaS.
 
 -[Delete Users](#delete_users)
 
+-[Change Owner](#change-ownser)
+
 -[Instalação](#instalation)
 
 
@@ -122,6 +124,8 @@ Sintaxe:
         LogFile   = Logfile path and name. 
                     Default is .\qlik_saas_delete_users.log
 
+
+
 ## Change Ownser
 
 [qlik_saas_change_owner.ps1](qlik_saas_change_owner.ps1)
@@ -131,6 +135,7 @@ Com o script [qlik_saas_change_owner.ps1](qlik_saas_change_owner.ps1) é possív
 Quando um usuário é removido ou quando perde o acesso ao SaaS, pode-se usar o recurso de alterar o proprietário da app, entretanto, nem todos os objetos são alterados pelo produto padrão, como por exemplo, as pastas não publicadas. Essa rotina tenta cobrir as lacunas de alteração de proprietários e ainda possibilita publicar pastas de um usuário.
 
 Sintaxe:
+
     qlik_change_owner -oldOwner <oldUserID> -newOwner <newUserID> [-fileNames <fileNames>] [-confirm <yes|no>] [-LogFile <Logfile path and name>]
         oldOwner  = The ID to owner to be used. 
                     This parameter is mandatory.
