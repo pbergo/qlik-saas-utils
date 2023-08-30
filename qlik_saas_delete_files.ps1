@@ -18,7 +18,6 @@ Param (
     [Parameter()][alias("date")][string]$dateFiles  = (Get-Date).DateTime,      #Data a ser utilizada
     [Parameter()][alias("conf")][string]$confirm    = 'no',                     #Determina se executa ou não o comando
     [Parameter()][string]$LogFile = '.\' + (Get-Item $PSCommandPath).BaseName + '.log'         # Log file name and path
-
 )
 
 ###### Funções
@@ -33,7 +32,7 @@ function Write-Log {
         'Message' = $Message        
     }
     Write-Host "$($line.DateTime) [$($line.Severity)]: $($line.Message)"
-    $line | Export-Csv -Path .\qlik_saas_delete_files.log -Append -NoTypeInformation
+    $line | Export-Csv -Path $LogFile -Append -NoTypeInformation
 }
 
 function Show-Help {
@@ -67,14 +66,17 @@ Usage:
 
 function PowerVersion {
     $version = $PSVersionTable.PSVersion
-    Return ($version.Major -lt 7) 
+    Return (!(($version.Major -eq 7) -and ($version.Minor -eq 2)))
 }
 
 
 function DeleteSpaceDataFiles {
     #Localiza os espaços existentes no servidor
     $spaces = qlik space ls --name "$spaceName" | ConvertFrom-Json
-    if (($?) -or ($spaceName -eq 'personal')) {
+    if ( !($spaces.id) ) {
+        Write-Log -Message "Space [$spaceName] not found !";
+    }
+    elseif (($?) -or ($spaceName -eq 'personal')) {
         #Trata as conexões do espaço personal
         if ($spaceName -eq 'personal') {
             Write-Log -Message "Using space Personal !";
@@ -136,7 +138,7 @@ if ( PowerVersion ) {
     $message = "
     *********************************************************************************************
 
-    Wrong version... This command only works with Powershell >= 7. 
+    Wrong version... This command only works with Powershell = 7.2.13. 
 
     Please download a newer PowerShell version at https://docs.microsoft.com/pt-br/powershell/
 

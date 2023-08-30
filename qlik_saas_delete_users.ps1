@@ -30,7 +30,7 @@ function Write-Log {
         'Message' = $Message        
     }
     Write-Host "$($line.DateTime) [$($line.Severity)]: $($line.Message)"
-    $line | Export-Csv -Path .\qlik_saas_delete_users.log -Append -NoTypeInformation
+    $line | Export-Csv -Path $LogFile -Append -NoTypeInformation
 }
 
 function PowerVersion {
