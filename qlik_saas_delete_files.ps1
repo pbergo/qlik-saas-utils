@@ -72,21 +72,21 @@ function PowerVersion {
 
 function DeleteSpaceDataFiles {
     #Localiza os espaços existentes no servidor
-    $spaces = qlik space ls --name "$spaceName" | ConvertFrom-Json
-    if ( !($spaces.id) ) {
-        Write-Log -Message "Space [$spaceName] not found !";
-    }
-    elseif (($?) -or ($spaceName -eq 'personal')) {
+    $spaces = qlik space ls --name "$spaceName" | ConvertFrom-Json | Where-Object { ($_.name -like "$spaceName") -or ($spaceName -eq 'personal') }
+    if ( !($spaces.id) -and ($spaceName -ne 'personal') ) {  Write-Log -Message "Space [$spaceName] not found !"; }
+    elseif ($spaceName -eq 'personal') { $spaces = @("")}
+    foreach ($space in $spaces) {
+        Write-Log -Message "Using space [$($space.name)] ID [$($space.id)] !";
         #Trata as conexões do espaço personal
         if ($spaceName -eq 'personal') {
             Write-Log -Message "Using space Personal !";
             $dataconnection = qlik raw get v1/data-connections | ConvertFrom-Json | Where-Object { ($_.qName -eq 'DataFiles') -and ($_.space -eq $null) }
         } else {
-            Write-Log -Message "Using space [$spaceName] ID [$($spaces.id)] !";
-            $dataconnection = qlik raw get v1/data-connections --query space="$($spaces.id)" | ConvertFrom-Json | Where-Object {$_.qName -eq 'DataFiles' }
+            #Write-Log -Message "Using space [$spaceName] ID [$($space.id)] !";
+            $dataconnection = qlik raw get v1/data-connections --query space="$($space.id)" | ConvertFrom-Json | Where-Object {$_.qName -eq 'DataFiles' }
         }
         if ($?) {
-            Write-Log -Message "Reading files from [$spaceName] ID [$($spaces.id)]... !";
+            Write-Log -Message "Reading files from [$($space.name)] ID [$($space.id)]... !";
             $listfiles = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)",top=100000 | ConvertFrom-Json | Where-Object {$_.name -like $fileNames}
 
             # O comando devolve 100000 registros, então faz a paginação até terminar de apagar os arquivos
@@ -105,15 +105,13 @@ function DeleteSpaceDataFiles {
                     }
                 }
                 if ($confirm -ne 'yes') {
-                    return
+                    break
                 } Else {
                     $listfiles = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)",top=100000 | ConvertFrom-Json | Where-Object {$_.name -like $fileNames}
                     #Write-Host 'Next page'
                 }
             }
         }
-    } Else {
-        Write-Log -Severity "Error" -Message "Error Space [$spaceName] not exists !";
     }
 }
 
