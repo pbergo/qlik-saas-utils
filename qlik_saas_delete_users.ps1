@@ -4,10 +4,10 @@
 #
 # Delete Users from SaaS
 #
-# (c) Pedro Bergo - pedroabergo@gmail.com - 2021
+# (c) Pedro Bergo - pedroabergo@gmail.com - 2023
 #
-# PowerShell 7.1.3
-# qlik-cli 2.3.1
+# PowerShell 7.2.13
+# qlik-cli 2.22.00
 #
 #################################################################################
 
@@ -15,9 +15,9 @@
 Param (
     [Parameter()][alias("user")][string]$userName = 'none',                      #Usuários a serem eliminados
     [Parameter()][alias("email")][string]$emailName = 'none',                    #emails dos Usuários a serem eliminados
-    [Parameter()][alias("conf")][string]$confirm    = 'no'                        #Determina se executa ou não o comando
+    [Parameter()][alias("conf")][string]$confirm    = 'no',                        #Determina se executa ou não o comando
+    [Parameter()][string]$LogFile = '.\' + (Get-Item $PSCommandPath).BaseName + '.log'        # Log file name and path)
 )
-
 ###### Funções
 function Write-Log {
     param ( 
@@ -30,7 +30,7 @@ function Write-Log {
         'Message' = $Message        
     }
     Write-Host "$($line.DateTime) [$($line.Severity)]: $($line.Message)"
-    $line | Export-Csv -Path .\qlik_saas_delete_users.log -Append -NoTypeInformation
+    $line | Export-Csv -Path $LogFile -Append -NoTypeInformation
 }
 
 function PowerVersion {
@@ -41,7 +41,7 @@ function PowerVersion {
 function Show-Help {
     $helpMessage = "
     
-qlik_saas_delete_users is a command line to delete multiple users of your Qlik SaaS tenant.
+$((Get-Item $PSCommandPath).BaseName) is a command line to delete multiple users of your Qlik SaaS tenant.
 
 Instructions:
     You need to specify the name or e-mail to delete the users.
@@ -49,13 +49,15 @@ Instructions:
     If you set the Confirm parameter to 'no', nothing will be done, just the users names will be listed. 
 
 Usage:
-    qlik_saas_delete_users [-userName <userName>] [-emailName <email>] [-confirm <yes|no>]
+    $((Get-Item $PSCommandPath).BaseName) [-userName <userName>] [-emailName <email>] [-confirm <yes|no>]  [-LogFile <Logfile path and name>]
         userName = The user name that will be deleted, you can use a wild card like '*', '?' to filter users. 
                     Default is 'none'.
         emailName = The email that will be deleted, you can use a wild card like '*', '?' to filter users. 
                     Default is 'none'.
         confirm   = If yes, then users will be deleted. If no, the users that will be deleted only will listed at
                     stdout. Default is no.
+        LogFile   = Logfile path and name. 
+                    Default is .\" + (Get-Item $PSCommandPath).BaseName + ".log
     "
     Write-Output $helpMessage
     return
@@ -92,7 +94,19 @@ function DeleteUsers {
 }
 
 
+#################################################################################
 ###### Código principal
+$Param = [pscustomobject]@{
+    'userName' = $userName
+    'emailName' = $emailName
+    'dateFiles' = $dateFiles        
+    'confirm' = $confirm        
+}
+$userName = $Param.userName
+$emailName = $Param.emailName
+$confirm   = $Param.confirm
+$LogFile = $Param.LogFile
+
 #Validações iniciais
 if ( PowerVersion ) {
     $message = "

@@ -4,10 +4,10 @@
 #
 # Delete Data Files from SaaS
 #
-# (c) Pedro Bergo - pedroabergo@gmail.com - 2021
+# (c) Pedro Bergo - pedroabergo@gmail.com - 2023
 #
-# PowerShell 7.1.3
-# qlik-cli 2.3.1
+# PowerShell 7.2.13
+# qlik-cli 2.22.00
 #
 #################################################################################
 
@@ -16,7 +16,8 @@ Param (
     [Parameter()][alias("space")][string]$spaceName = 'personal',               #Espaço a ser utilizado.
     [Parameter()][alias("files")][string]$fileNames = 'none',                   #Arquivos a serem eliminados
     [Parameter()][alias("date")][string]$dateFiles  = (Get-Date).DateTime,      #Data a ser utilizada
-    [Parameter()][alias("conf")][string]$confirm    = 'no'                      #Determina se executa ou não o comando
+    [Parameter()][alias("conf")][string]$confirm    = 'no',                     #Determina se executa ou não o comando
+    [Parameter()][string]$LogFile = '.\' + (Get-Item $PSCommandPath).BaseName + '.log'         # Log file name and path
 )
 
 ###### Funções
@@ -31,13 +32,13 @@ function Write-Log {
         'Message' = $Message        
     }
     Write-Host "$($line.DateTime) [$($line.Severity)]: $($line.Message)"
-    $line | Export-Csv -Path .\qlik_saas_delete_files.log -Append -NoTypeInformation
+    $line | Export-Csv -Path $LogFile -Append -NoTypeInformation
 }
 
 function Show-Help {
     $helpMessage = "
     
-qlik_saas_delete_files is a command line to delete multiple data files inside any authorized SaaS Space of your tenant.
+$((Get-Item $PSCommandPath).BaseName) is a command line to delete multiple data files inside any authorized SaaS Space of your tenant.
 
 Instructions:
     The space must contain the name of SaaS Space wich has the files that will be deleted. You can specify
@@ -46,7 +47,7 @@ Instructions:
     If you set the Confirm parameter to 'no', nothing will be done, just the file names will be listed.
 
 Usage:
-    qlik_saas_delete_files -fileNames <fileNames> [-spaceName <spaceName>] [-date <date>] [-confirm <yes|no>]
+    $((Get-Item $PSCommandPath).BaseName) -fileNames <fileNames> [-spaceName <spaceName>] [-date <date>] [-confirm <yes|no>] [-LogFile <Logfile path and name>]
         fileNames = The file name to be deleted. You can use wildcards like '*' and '?' to filter files. 
                     This parameter is mandatory.
         spaceName = The Name of Space wich has the files that will be deleted. Leave it blank to use the 
@@ -56,6 +57,8 @@ Usage:
                     Default is today.
         confirm   = If yes, then files will be deleted. If no, the files only will be listed at stdout. 
                     Default is no.
+        LogFile   = Logfile path and name. 
+                    Default is .\" + (Get-Item $PSCommandPath).BaseName + ".log
     "
     Write-Output $helpMessage
     return
@@ -63,14 +66,17 @@ Usage:
 
 function PowerVersion {
     $version = $PSVersionTable.PSVersion
-    Return ($version.Major -lt 7) 
+    Return (!(($version.Major -eq 7) -and ($version.Minor -eq 2)))
 }
 
 
 function DeleteSpaceDataFiles {
     #Localiza os espaços existentes no servidor
-    $spaces = qlik space filter --names "$spaceName" | ConvertFrom-Json
-    if (($?) -or ($spaceName -eq 'personal')) {
+    $spaces = qlik space ls --name "$spaceName" | ConvertFrom-Json
+    if ( !($spaces.id) ) {
+        Write-Log -Message "Space [$spaceName] not found !";
+    }
+    elseif (($?) -or ($spaceName -eq 'personal')) {
         #Trata as conexões do espaço personal
         if ($spaceName -eq 'personal') {
             Write-Log -Message "Using space Personal !";
@@ -111,14 +117,28 @@ function DeleteSpaceDataFiles {
     }
 }
 
-
+#################################################################################
 ###### Código principal
+$Param = [pscustomobject]@{
+    'spaceName' = $spaceName
+    'fileNames' = $fileNames
+    'dateFiles' = $dateFiles        
+    'confirm' = $confirm        
+    'LogFile' = $LogFile
+}
+$spaceName = $Param.spaceName
+$fileNames = $Param.fileNames
+$dateFiles = $Param.dateFiles
+$confirm   = $Param.confirm
+$LogFile = $Param.LogFile
+
 #Validações iniciais
+
 if ( PowerVersion ) {
     $message = "
     *********************************************************************************************
 
-    Wrong version... This command only works with Powershell >= 7. 
+    Wrong version... This command only works with Powershell = 7.2.13. 
 
     Please download a newer PowerShell version at https://docs.microsoft.com/pt-br/powershell/
 
