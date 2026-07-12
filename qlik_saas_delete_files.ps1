@@ -66,7 +66,7 @@ Usage:
 
 function PowerVersion {
     $version = $PSVersionTable.PSVersion
-    Return (!(($version.Major -eq 7) -and ($version.Minor -eq 2)))
+    Return (!(($version.Major -ge 7) -and ($version.Minor -ge 2)))
 }
 
 
@@ -87,7 +87,9 @@ function DeleteSpaceDataFiles {
         }
         if ($?) {
             Write-Log -Message "Reading files from [$($space.name)] ID [$($space.id)]... !";
-            $listfiles = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)",top=100000 | ConvertFrom-Json | Where-Object {$_.name -like $fileNames}
+            # Removed top argument
+            #$listfiles = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)",top=100000 | ConvertFrom-Json | Where-Object {$_.name -like $fileNames}
+            $listfiles = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)" | ConvertFrom-Json | Where-Object {$_.name -like $fileNames}
 
             # O comando devolve 100000 registros, então faz a paginação até terminar de apagar os arquivos
             while ( $($listfiles.Length) -ge 1) {
@@ -107,7 +109,9 @@ function DeleteSpaceDataFiles {
                 if ($confirm -ne 'yes') {
                     break
                 } Else {
-                    $listfiles = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)",top=100000 | ConvertFrom-Json | Where-Object {$_.name -like $fileNames}
+                    # Removed top argument
+                    #$listfiles = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)",top=100000 | ConvertFrom-Json | Where-Object {$_.name -like $fileNames}
+                    $listfiles = qlik raw get v1/qix-datafiles --query connectionId="$($dataconnection.id)" | ConvertFrom-Json | Where-Object {$_.name -like $fileNames}
                     #Write-Host 'Next page'
                 }
             }
@@ -136,7 +140,7 @@ if ( PowerVersion ) {
     $message = "
     *********************************************************************************************
 
-    Wrong version... This command only works with Powershell = 7.2.13. 
+    Wrong version... This command only works with Powershell >= 7.2.13. 
 
     Please download a newer PowerShell version at https://docs.microsoft.com/pt-br/powershell/
 
